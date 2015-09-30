@@ -69,7 +69,7 @@ void Curve::drawCurve(Color curveColor, float curveThickness, int window)
 		Point from = controlPoints[previousPointIndex].position;
 		Point to = controlPoints[currentPointIndex].position;
 		DrawLib::drawLine(from, to, curveColor);
-		previousPointIndex == currentPointIndex;
+		previousPointIndex = currentPointIndex;
 	}
 	
 #endif
