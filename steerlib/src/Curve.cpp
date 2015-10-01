@@ -44,21 +44,34 @@ void Curve::addControlPoints(const std::vector<CurvePoint>& inputPoints)
 void Curve::drawCurve(Color curveColor, float curveThickness, int window)
 {
 #ifdef ENABLE_GUI
-
-	//================DELETE THIS PART AND THEN START CODING===================
-	static bool flag = false;
-	if (!flag)
-	{
-		std::cerr << "ERROR>>>>Member function drawCurve is not implemented!" << std::endl;
-		flag = true;
-	}
-	//=========================================================================
-
 	// Robustness: make sure there is at least two control point: start and end points
+	// Note: I'm using assertions because this should never happen. The robustCheck should
+	// handle user input error.
+	assert(controlPoints.size() >= 2);
+	assert(window > 0);
 
 	// Move on the curve from t=0 to t=finalPoint, using window as step size, and linearly interpolate the curve points
+	float startTime = controlPoints.front().time;
+	float endTime = controlPoints.back().time;
+	float diff = endTime - startTime;
+	unsigned int previousPointIndex = 0;
+	unsigned int currentPointIndex = 0;
+
+	assert(diff > 0);
+
+	for (int i = 0; i < window; i++) {
+		// The ratio goes from 0 (starting point) and to 1 (final point).
+		float ratio = (float)(i) / window;
+		// Note: Renish mentioned something about the time being normalized for this method.
+		// It isn't clear to me whether I should pass the exact time (as I am now) or
+		// the normalized time to findTimeInterval. Regardless, it should be easy to switch.
+		findTimeInterval(currentPointIndex, ratio * diff + startTime);
+		Point from = controlPoints[previousPointIndex].position;
+		Point to = controlPoints[currentPointIndex].position;
+		DrawLib::drawLine(from, to, curveColor);
+		previousPointIndex = currentPointIndex;
+	}
 	
-	return;
 #endif
 }
 

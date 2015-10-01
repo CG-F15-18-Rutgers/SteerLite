@@ -157,7 +157,22 @@ void CurveAgent::draw()
 		}
 	}
 	else {
-		Util::DrawLib::drawAgentDisc(__position, _forward, _radius, agentColor);
+		float xmin = __position.x - _radius, xmax = __position.x + _radius,
+			ymin = __position.y, ymax = ymin + _radius,
+			zmin = __position.z - _radius, zmax = __position.z + _radius;
+		float scale = .5f;
+		// Draw five boxes of decreasing size.
+		for (int i = 0; i < 5; i++) {
+			// Use a gradient color for maximum red on top.
+			Util::DrawLib::glColor(Util::Color(i/5.0f, 0.1f, .1f));
+			Util::DrawLib::drawBox(xmin, xmax, ymin, ymax, zmin, zmax);
+			xmin *= scale;
+			xmax *= scale;
+			ymin = ymax;
+			ymax = ymin + _radius * scale;
+			zmin *= scale;
+			zmax *= scale;
+		}
 	}
 
 	// Draw flags for all goal targets
