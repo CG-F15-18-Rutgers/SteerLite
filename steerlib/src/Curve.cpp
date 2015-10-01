@@ -62,9 +62,14 @@ void Curve::drawCurve(Color curveColor, float curveThickness, int window)
 #endif
 }
 
+bool sortHelper(CurvePoint i, CurvePoint j){
+
+    return (i.time < j.time) ? true : false;
+}
 // Sort controlPoints vector in ascending order: min-first
 void Curve::sortControlPoints()
 {
+    /*
 	//================DELETE THIS PART AND THEN START CODING===================
 	static bool flag = false;
 	if (!flag)
@@ -73,8 +78,9 @@ void Curve::sortControlPoints()
 		flag = true;
 	}
 	//=========================================================================
-
-	return;
+    */
+    std::sort (controlPoints.begin(),controlPoints.end(), sortHelper);
+    return;
 }
 
 // Calculate the position on curve corresponding to the given time, outputPoint is the resulting position
