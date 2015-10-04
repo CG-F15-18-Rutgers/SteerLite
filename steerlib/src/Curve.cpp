@@ -254,7 +254,8 @@ Vector Curve::getCatmullTangent(const unsigned int pointIndex) {
         Point y_i = c_i.position;
         // TODO: what is the correct formula here?
         // return ((t_i - t_im2) / (t_i - t_im1))*((y_im1 - y_im2) / (t_im1 - t_im2)) - ((t_im1 - t_im2) / (t_i - t_im1))*((y_i - y_im2) / (t_i - t_im2));
-        return Vector();
+        return ((t_im1 - t_im2) / (t_i - t_im2))*((y_i - y_im1) / (t_i - t_im1)) + ((t_i - t_im1) / (t_i - t_im2))*((y_im1 - y_im2) / (t_im1 - t_im2));
+        //return Vector();
     }
     else {
         CurvePoint c_im1 = controlPoints[pointIndex-1];
