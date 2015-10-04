@@ -61,7 +61,7 @@ void Curve::drawCurve(Color curveColor, float curveThickness, int window)
 		for (int step = 1; step <= window; step++) {
 			// ratio ranges from 0 (starting point) and to 1 (final point).
 			float ratio = (float)(step) / window;
-			float time = c0.time + timeDifference * ratio;
+            float time = min(c1.time, c0.time + timeDifference * ratio);
 			Point curvePoint; 
 			calculatePoint(curvePoint, time);
 			DrawLib::drawLine(previousPoint, curvePoint, curveColor);
@@ -75,21 +75,11 @@ void Curve::drawCurve(Color curveColor, float curveThickness, int window)
 
 bool sortHelper(CurvePoint i, CurvePoint j){
 
-    return (i.time < j.time) ? true : false;
+    return (i.time <= j.time) ? true : false;
 }
 // Sort controlPoints vector in ascending order: min-first
 void Curve::sortControlPoints()
 {
-    /*
-	//================DELETE THIS PART AND THEN START CODING===================
-	static bool flag = false;
-	if (!flag)
-	{
-		std::cerr << "ERROR>>>>Member function sortControlPoints is not implemented!" << std::endl;
-		flag = true;
-	}
-	//=========================================================================
-    */
     std::sort (controlPoints.begin(),controlPoints.end(), sortHelper);
     return;
 }
@@ -144,30 +134,7 @@ bool Curve::checkRobust()
 
 	if (controlPoints.size() < 2 || type != 0 && type != 1)
         return false;
-		
-		//make sure each control point is in ascending order
-    if (controlPoints[0].time < 0)
-        return false;
 
-    for (int i = 1; i < controlPoints.size() - 1; i++){
-        if (controlPoints[i - 1].time > controlPoints[i].time)
-            return false;
-        if (controlPoints[i].time < 0)
-            return false;
-    }
-    /*
-	//================DELETE THIS PART AND THEN START CODING===================
-	static bool flag = false;
-	if (!flag)
-	{
-		std::cerr << "ERROR>>>>Member function checkRobust is not implemented!" << std::endl;
-		flag = true;
-	}
-	//=========================================================================
-
-    
-	return true;
-    */
 	return true;
 }
 
@@ -178,7 +145,7 @@ bool Curve::findTimeInterval(unsigned int& nextPoint, float time)
 	for(int i=0; i < controlPoints.size(); i++) {
         //Check to see if any of the control points are beyond current time.
         //Already sorted by the point of calling function so just have to find first point
-        if(controlPoints[i].time >= time) {
+        if(controlPoints[i].time > time) {
             //Found a point
             nextPoint = i;
             return true;
@@ -267,10 +234,7 @@ Vector Curve::getCatmullTangent(const unsigned int pointIndex) {
         Point y_im2 = c_im2.position;
         Point y_im1 = c_im1.position;
         Point y_i = c_i.position;
-        // TODO: what is the correct formula here?
-        // return ((t_i - t_im2) / (t_i - t_im1))*((y_im1 - y_im2) / (t_im1 - t_im2)) - ((t_im1 - t_im2) / (t_i - t_im1))*((y_i - y_im2) / (t_i - t_im2));
         return ((t_im1 - t_im2) / (t_i - t_im2))*((y_i - y_im1) / (t_i - t_im1)) + ((t_i - t_im1) / (t_i - t_im2))*((y_im1 - y_im2) / (t_im1 - t_im2));
-        //return Vector();
     }
     else {
         CurvePoint c_im1 = controlPoints[pointIndex-1];
