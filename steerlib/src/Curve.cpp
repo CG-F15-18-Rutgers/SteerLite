@@ -267,7 +267,6 @@ Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
 Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
 {
 	Point newPosition;
-<<<<<<< HEAD
         unsigned int previousPoint;
         unsigned int nextPoint2;
 
@@ -415,23 +414,4 @@ Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
         newPosition.y = y_value;
         newPosition.z = z_value;
         return newPosition;
-=======
-
-	//================DELETE THIS PART AND THEN START CODING===================
-	static bool flag = false;
-	if (!flag)
-	{
-		std::cerr << "ERROR>>>>Member function useCatmullCurve is not implemented!" << std::endl;
-		flag = true;
-	}
-	//=========================================================================
-
-
-	// Calculate time interval, and normal time required for later curve calculations
-
-	// Calculate position at t = time on Catmull-Rom curve
-	
-	// Return result
-	return newPosition;
->>>>>>> 1ee022bf669ad1ff9aa3f4e170939687170e07e3
 }
