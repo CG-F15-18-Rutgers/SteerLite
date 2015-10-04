@@ -130,17 +130,17 @@ bool Curve::checkRobust()
 {
     //make sure type of curve is specified and there are at least two points
     if (controlPoints.size() < 2 || type != 0 && type != 1)
-        return false
+        return false;
 
     //make sure each control point is in ascending order
     if (controlPoints[0].time < 0)
-        return false
+        return false;
 
     for (int i = 1; i < controlPoints.size() - 1; i++){
         if (controlPoints[i - 1].time > controlPoints[i].time)
-            return false 
+            return false; 
         if (controlPoints[i].time < 0)
-            return false
+            return false;
     }
     /*
 	//================DELETE THIS PART AND THEN START CODING===================
@@ -155,7 +155,7 @@ bool Curve::checkRobust()
     
 	return true;
     */
-    return true
+    return true;
 }
 
 // Find the current time interval (i.e. index of the next control point to follow according to current time)
@@ -267,7 +267,6 @@ Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
 Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
 {
 	Point newPosition;
-<<<<<<< HEAD
         unsigned int previousPoint;
         unsigned int nextPoint2;
 
@@ -338,72 +337,63 @@ Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
         float s_z2;
 
         // Extra values for Catmull-Rom 
-        float t0;
         float x0;
         float y0;
         float z0;
 
-        float t3;
         float x3;  
         float y3;
         float z3;
 
         // Catmull-Rom tangent components
         if (previousPoint == 0) {
-            t3 = controlPoints[nextPoint2 + 1].time;
             x3 = controlPoints[nextPoint2 + 1].position.x;
             y3 = controlPoints[nextPoint2 + 1].position.y;
             z3 = controlPoints[nextPoint2 + 1].position.z;
+  
+            s_x1 = 2*(x2 - x1) - (x3 - x1)/2;
+            s_x2 = (x3 - x1)/2;
 
-            s_x1 = ((t3-t1)/(t3-t2))*((x2-x1)/(t2-t1)) - ((t2-t1)/(t3-t2))*((x3-x1)/(t3-t1));
-            s_x2 = ((t2 - t1)/(t3 - t1))*((x3 - x2)/(t3 - t2)) + ((t3 - t2)/(t3 - t1))*((x2 - x1)/(t2 - t1));
+            s_y1 = 2*(y2 - y1) - (y3 - y1)/2;
+            s_y2 = (y3 - y1)/2;
 
-            s_y1 = ((t3-t1)/(t3-t2))*((y2-y1)/(t2-t1)) - ((t2-t1)/(t3-t2))*((y3-y1)/(t3-t1));
-            s_y2 = ((t2 - t1)/(t3 - t1))*((y3 - y2)/(t3 - t2)) + ((t3 - t2)/(t3 - t1))*((y2 - y1)/(t2 - t1));
-
-            s_z1 = ((t3-t1)/(t3-t2))*((z2-z1)/(t2-t1)) - ((t2-t1)/(t3-t2))*((z3-z1)/(t3-t1));
-            s_z2 = ((t2 - t1)/(t3 - t1))*((z3 - z2)/(t3 - t2)) + ((t3 - t2)/(t3 - t1))*((z2 - z1)/(t2 - t1));
-            
+            s_z1 = (z2 - z0)/2;
+            s_z2 = 2*(z2 - z1) - (z3 - z1)/2;
+               
         }
         else if (nextPoint2 == controlPoints.size() - 1) {
-            t0 = controlPoints[previousPoint - 1].time;
             x0 = controlPoints[previousPoint-1].position.x;
             y0 = controlPoints[previousPoint-1].position.y;
             z0 = controlPoints[previousPoint-1].position.z;
 
-            s_x1 = ((t1-t0)/(t2-t0))*((x2-x1)/(t2-t1)) + ((t2-t1)/(t2-t0))*((x1-x0)/(t1-t0));
-            s_x2 = ((t2-t0)/(t2-t1))*((x1-x0)/(t1-t0)) - ((t1-t0)/(t2-t1))*((x2-x0)/(t2-t0));
- 
+            s_x1 = (x2 - x0)/2;
+            s_x2 = 2*(x2 - x1) - (x2 - x0)/2;
 
-            s_y1 = ((t1-t0)/(t2-t0))*((y2-y1)/(t2-t1)) + ((t2-t1)/(t2-t0))*((y1-y0)/(t1-t0));
-            s_y2 = ((t2-t0)/(t2-t1))*((y1-y0)/(t1-t0)) - ((t1-t0)/(t2-t1))*((y2-y0)/(t2-t0));
+            s_y1 = (y2 - y0)/2;
+            s_y2 = 2*(y2 - y1) - (y2 - y0)/2;
 
-
-            s_z1 = ((t1-t0)/(t2-t0))*((z2-z1)/(t2-t1)) + ((t2-t1)/(t2-t0))*((z1-z0)/(t1-t0));
-            s_z2 = ((t2-t0)/(t2-t1))*((z1-z0)/(t1-t0)) - ((t1-t0)/(t2-t1))*((z2-z0)/(t2-t0));
-
+            s_z1 = (z2 - z0)/2;
+            s_z2 = 2*(z2 - z1) - (z2 - z0)/2;
         }
         else {
-            t0 = controlPoints[previousPoint - 1].time;
             x0 = controlPoints[previousPoint-1].position.x;
             y0 = controlPoints[previousPoint-1].position.y;
             z0 = controlPoints[previousPoint-1].position.z;
            
-
-            t3 = controlPoints[nextPoint2 + 1].time;
             x3 = controlPoints[nextPoint2 + 1].position.x;
             y3 = controlPoints[nextPoint2 + 1].position.y;
             z3 = controlPoints[nextPoint2 + 1].position.z;
+            
+            s_x1 = (x2 - x0)/2;
+            s_x2 = (x3 - x1)/2;
 
-            s_x1 = ((t1-t0)/(t2-t0))*((x2-x1)/(t2-t1)) + ((t2-t1)/(t2-t0))*((x1-x0)/(t1-t0));
-            s_x2 = ((t2 - t1)/(t3 - t1))*((x3 - x2)/(t3 - t2)) + ((t3 - t2)/(t3 - t1))*((x2 - x1)/(t2 - t1));
-
-            s_y1 = ((t1-t0)/(t2-t0))*((y2-y1)/(t2-t1)) + ((t2-t1)/(t2-t0))*((y1-y0)/(t1-t0));
-            s_y2 = ((t2 - t1)/(t3 - t1))*((y3 - y2)/(t3 - t2)) + ((t3 - t2)/(t3 - t1))*((y2 - y1)/(t2 - t1));
- 
-            s_z1 = ((t1-t0)/(t2-t0))*((z2-z1)/(t2-t1)) + ((t2-t1)/(t2-t0))*((z1-z0)/(t1-t0));
-            s_z2 = ((t2 - t1)/(t3 - t1))*((z3 - z2)/(t3 - t2)) + ((t3 - t2)/(t3 - t1))*((z2 - z1)/(t2 - t1));
+            s_y1 = (y2 - y0)/2;
+            s_y2 = (y3 - y1)/2;
+        
+            s_z1 = (z2 - z0)/2;
+            s_z2 = (z3 - z1)/2;
         }
+      
 
         // Final Values
         float x_value = x1*f1 + x2*f2 + s_x1*f3 + s_x2*f4;
@@ -415,23 +405,4 @@ Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
         newPosition.y = y_value;
         newPosition.z = z_value;
         return newPosition;
-=======
-
-	//================DELETE THIS PART AND THEN START CODING===================
-	static bool flag = false;
-	if (!flag)
-	{
-		std::cerr << "ERROR>>>>Member function useCatmullCurve is not implemented!" << std::endl;
-		flag = true;
-	}
-	//=========================================================================
-
-
-	// Calculate time interval, and normal time required for later curve calculations
-
-	// Calculate position at t = time on Catmull-Rom curve
-	
-	// Return result
-	return newPosition;
->>>>>>> 1ee022bf669ad1ff9aa3f4e170939687170e07e3
 }
