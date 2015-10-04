@@ -44,27 +44,45 @@ void Curve::addControlPoints(const std::vector<CurvePoint>& inputPoints)
 void Curve::drawCurve(Color curveColor, float curveThickness, int window)
 {
 #ifdef ENABLE_GUI
-
-	//================DELETE THIS PART AND THEN START CODING===================
-	static bool flag = false;
-	if (!flag)
-	{
-		std::cerr << "ERROR>>>>Member function drawCurve is not implemented!" << std::endl;
-		flag = true;
-	}
-	//=========================================================================
-
 	// Robustness: make sure there is at least two control point: start and end points
+	// Note: I'm using assertions because this should never happen. The robustCheck should
+	// handle user input error.
+	assert(controlPoints.size() >= 2);
+	assert(window > 0);
 
 	// Move on the curve from t=0 to t=finalPoint, using window as step size, and linearly interpolate the curve points
+	float startTime = controlPoints.front().time;
+	float endTime = controlPoints.back().time;
+	float diff = endTime - startTime;
+	unsigned int previousPointIndex = 0;
+	unsigned int currentPointIndex = 0;
+
+	assert(diff > 0);
+
+	for (int i = 0; i < window; i++) {
+		// The ratio goes from 0 (starting point) and to 1 (final point).
+		float ratio = (float)(i) / window;
+		// Note: Renish mentioned something about the time being normalized for this method.
+		// It isn't clear to me whether I should pass the exact time (as I am now) or
+		// the normalized time to findTimeInterval. Regardless, it should be easy to switch.
+		findTimeInterval(currentPointIndex, ratio * diff + startTime);
+		Point from = controlPoints[previousPointIndex].position;
+		Point to = controlPoints[currentPointIndex].position;
+		DrawLib::drawLine(from, to, curveColor);
+		previousPointIndex = currentPointIndex;
+	}
 	
-	return;
 #endif
 }
 
+bool sortHelper(CurvePoint i, CurvePoint j){
+
+    return (i.time < j.time) ? true : false;
+}
 // Sort controlPoints vector in ascending order: min-first
 void Curve::sortControlPoints()
 {
+    /*
 	//================DELETE THIS PART AND THEN START CODING===================
 	static bool flag = false;
 	if (!flag)
@@ -73,8 +91,9 @@ void Curve::sortControlPoints()
 		flag = true;
 	}
 	//=========================================================================
-
-	return;
+    */
+    std::sort (controlPoints.begin(),controlPoints.end(), sortHelper);
+    return;
 }
 
 // Calculate the position on curve corresponding to the given time, outputPoint is the resulting position
@@ -109,6 +128,21 @@ bool Curve::calculatePoint(Point& outputPoint, float time)
 // Check Roboustness
 bool Curve::checkRobust()
 {
+    //make sure type of curve is specified and there are at least two points
+    if (controlPoints.size() < 2 || type != 0 && type != 1)
+        return false
+
+    //make sure each control point is in ascending order
+    if (controlPoints[0].time < 0)
+        return false
+
+    for (int i = 1; i < controlPoints.size() - 1; i++){
+        if (controlPoints[i - 1].time > controlPoints[i].time)
+            return false 
+        if (controlPoints[i].time < 0)
+            return false
+    }
+    /*
 	//================DELETE THIS PART AND THEN START CODING===================
 	static bool flag = false;
 	if (!flag)
@@ -118,8 +152,10 @@ bool Curve::checkRobust()
 	}
 	//=========================================================================
 
-
+    
 	return true;
+    */
+    return true
 }
 
 // Find the current time interval (i.e. index of the next control point to follow according to current time)
@@ -231,6 +267,7 @@ Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
 Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
 {
 	Point newPosition;
+<<<<<<< HEAD
         unsigned int previousPoint;
         unsigned int nextPoint2;
 
@@ -378,4 +415,23 @@ Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
         newPosition.y = y_value;
         newPosition.z = z_value;
         return newPosition;
+=======
+
+	//================DELETE THIS PART AND THEN START CODING===================
+	static bool flag = false;
+	if (!flag)
+	{
+		std::cerr << "ERROR>>>>Member function useCatmullCurve is not implemented!" << std::endl;
+		flag = true;
+	}
+	//=========================================================================
+
+
+	// Calculate time interval, and normal time required for later curve calculations
+
+	// Calculate position at t = time on Catmull-Rom curve
+	
+	// Return result
+	return newPosition;
+>>>>>>> 1ee022bf669ad1ff9aa3f4e170939687170e07e3
 }
