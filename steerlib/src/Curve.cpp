@@ -135,24 +135,25 @@ bool Curve::checkRobust()
     if (controlPoints[0].time < 0)
         return false;
 
-    for (int i = 1; i < controlPoints.size() - 1; i++){
+    for (int i = 1; i < controlPoints.size() - 1; i++) {
         if (controlPoints[i - 1].time > controlPoints[i].time)
-            return false; 
+            return false;
         if (controlPoints[i].time < 0)
             return false;
+    }
 
 	if (controlPoints.size() < 2 || type != 0 && type != 1)
-		return false;
+        return false;
 		
 		//make sure each control point is in ascending order
-	if (controlPoints[0].time < 0)
-		return false;
+    if (controlPoints[0].time < 0)
+        return false;
 
     for (int i = 1; i < controlPoints.size() - 1; i++){
-		if (controlPoints[i - 1].time > controlPoints[i].time)
-			return false;
-		if (controlPoints[i].time < 0)
-			return false;
+        if (controlPoints[i - 1].time > controlPoints[i].time)
+            return false;
+        if (controlPoints[i].time < 0)
+            return false;
     }
     /*
 	//================DELETE THIS PART AND THEN START CODING===================
@@ -189,15 +190,9 @@ bool Curve::findTimeInterval(unsigned int& nextPoint, float time)
 
 }
 
-// Implement Hermite curve
-Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
-{
-	assert(nextPoint > 0);
-	Point newPosition;
-
-	CurvePoint c1 = controlPoints[nextPoint - 1];
-	CurvePoint c2 = controlPoints[nextPoint];
-
+// Given two CurvePoints (including tangents) uses the hermite formula to compute the interpolation.
+// Note: this is called by the catmull rom implementation since catmull rom just precomputes the tangents.
+Point hermiteInterpolateInternal(const CurvePoint& c1, const CurvePoint& c2, float time) {
     // Point Vectors
     Point p1 = c1.position;
     Point p2 = c2.position;
@@ -208,176 +203,99 @@ Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
 
     // Times
     float t1 = c1.time;
-    float t2 = c2.time; 
-        
+    float t2 = c2.time;
+
     // If input time isn't in interval, return 0 vector
     if (!(time >= t1 && time <= t2)) {
-        newPosition.x = 0;
-        newPosition.y = 0;
-        newPosition.z = 0;
-        return newPosition; 
+        return Point();
     }
 
     // Time values
-    float interval = t2 - t1;      
-    float itSq   = interval*interval;
-    float itCub  = itSq*interval;
+    float interval = t2 - t1;
+    float itSq = interval*interval;
+    float itCub = itSq*interval;
 
-    float t_ti    = time - t1;
-    float t_tiSq  = t_ti*t_ti; 
+    float t_ti = time - t1;
+    float t_tiSq = t_ti*t_ti;
     float t_tiCub = t_tiSq*t_ti;
 
     // Basis functions
-    float f1 = 2*(t_tiCub/itCub) - 3*(t_tiSq/itSq) + 1;
-    float f2 = -2*(t_tiCub/itCub) + 3*(t_tiSq/itSq);
-    float f3 = (t_tiCub/itSq) - 2*(t_tiSq/interval) + t_ti;
-    float f4 = (t_tiCub/itSq) - (t_tiSq/interval); 
+    float f1 = 2 * (t_tiCub / itCub) - 3 * (t_tiSq / itSq) + 1;
+    float f2 = -2 * (t_tiCub / itCub) + 3 * (t_tiSq / itSq);
+    float f3 = (t_tiCub / itSq) - 2 * (t_tiSq / interval) + t_ti;
+    float f4 = (t_tiCub / itSq) - (t_tiSq / interval);
 
-	// Points can be multiplied by scalars, they also play well with Vectors.
-	Point value = f1 * p1 + f2 * p2 + f3 * s1 + f4 * s2;
-	return value;
+    // Points can be multiplied by scalars, they also play well with Vectors.
+    return f1 * p1 + f2 * p2 + f3 * s1 + f4 * s2;
+}
+
+// Implement Hermite curve
+Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
+{
+	assert(nextPoint > 0);
+
+	CurvePoint c1 = controlPoints[nextPoint - 1];
+	CurvePoint c2 = controlPoints[nextPoint];
+
+    return hermiteInterpolateInternal(c1, c2, time);
+}
+
+
+// Given a point index, it returns the tangent as computed by the catmull rom formulas
+Vector Curve::getCatmullTangent(const unsigned int pointIndex) {
+    // The boundaries are special cases.
+    if (pointIndex == 0) {
+        CurvePoint c0 = controlPoints[0];
+        CurvePoint c1 = controlPoints[1];
+        CurvePoint c2 = controlPoints[2];
+        float t0 = c0.time;
+        float t1 = c1.time;
+        float t2 = c2.time;
+        Point y0 = c0.position;
+        Point y1 = c1.position;
+        Point y2 = c2.position;
+        return (t2 - t0) / (t2 - t1) * (y1 - y0) / (t1 - t0) - (t1 - t0) / (t2 - t1) * (y2 - y0) / (t2 - t0);
+    }
+    else if (pointIndex == controlPoints.size() - 1) {
+        // m and p stand for minus and plus.
+        CurvePoint c_im2 = controlPoints[pointIndex - 2];
+        CurvePoint c_im1 = controlPoints[pointIndex - 1];
+        CurvePoint c_i = controlPoints[pointIndex];
+        float t_im2 = c_im2.time;
+        float t_im1 = c_im1.time;
+        float t_i = c_i.time;
+        Point y_im2 = c_im2.position;
+        Point y_im1 = c_im1.position;
+        Point y_i = c_i.position;
+        // TODO: what is the correct formula here?
+        // return ((t_i - t_im2) / (t_i - t_im1))*((y_im1 - y_im2) / (t_im1 - t_im2)) - ((t_im1 - t_im2) / (t_i - t_im1))*((y_i - y_im2) / (t_i - t_im2));
+        return ((t_im1 - t_im2) / (t_i - t_im2))*((y_i - y_im1) / (t_i - t_im1)) + ((t_i - t_im1) / (t_i - t_im2))*((y_im1 - y_im2) / (t_im1 - t_im2));
+        //return Vector();
+    }
+    else {
+        CurvePoint c_im1 = controlPoints[pointIndex-1];
+        CurvePoint c_i = controlPoints[pointIndex];
+        CurvePoint c_ip1 = controlPoints[pointIndex+1];
+        float t_im1 = c_im1.time;
+        float t_i = c_i.time;
+        float t_ip1 = c_ip1.time;
+        Point y_im1 = c_im1.position;
+        Point y_i = c_i.position;
+        Point y_ip1 = c_ip1.position;
+        return (t_i - t_im1) / (t_ip1 - t_im1) * (y_ip1 - y_i) / (t_ip1 - t_i) + (t_ip1 - t_i) / (t_ip1 - t_im1) * (y_i - y_im1) / (t_i - t_im1);
+    }
 }
 
 // Implement Catmull-Rom curve
 Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
 {
-	Point newPosition;
-        unsigned int previousPoint;
-        unsigned int nextPoint2;
+    assert(nextPoint > 0);
 
-        // If nextPoint is 0, we look ahead in the array  
-        if (nextPoint == 0) {
-            previousPoint = 0;
-            nextPoint2 = 1;
-        }
-        // Otherwise, we look behind in the array
-        else {
-            previousPoint = nextPoint - 1;
-            nextPoint2 = 1;
-        }
+    CurvePoint c0 = controlPoints[nextPoint - 1];
+    CurvePoint c1 = controlPoints[nextPoint];
 
-        // Point Vectors
-        Point p1 = controlPoints[previousPoint].position;
-        Point p2 = controlPoints[nextPoint2].position;
-
-         // Tangent Vectors
-        Vector s1 = controlPoints[previousPoint].tangent;
-        Vector s2 = controlPoints[nextPoint2].tangent;
-
-        // Times
-        float t1 = controlPoints[previousPoint].time;
-        float t2 = controlPoints[nextPoint2].time;
-
-        // If input time isn't in interval, return 0 vector
-        if (!(time >= t1 && time <= t2)) {
-            newPosition.x = 0;
-            newPosition.y = 0;
-            newPosition.z = 0;
-            return newPosition;
-        }
-
-        // Time values
-        float interval = t2 - t1;
-        float itSq   = interval*interval;
-        float itCub  = itSq*interval;
-
-        float t_ti    = time - t1;
-        float t_tiSq  = t_ti*t_ti;
-        float t_tiCub = t_tiSq*t_ti;
-
-        // Basis functions
-        float f1 = 2*(t_tiCub/itCub) - 3*(t_tiSq/itSq) + 1;
-        float f2 = -2*(t_tiCub/itCub) + 3*(t_tiSq/itSq);
-        float f3 = (t_tiCub/itSq) - 2*(t_tiSq/interval) + t_ti;
-        float f4 = (t_tiCub/itSq) - (t_tiSq/interval);
-
-        // Position components
-        float x1 = p1.x;
-        float x2 = p2.x;
-
-        float y1 = p1.y;
-        float y2 = p2.y;
-
-        float z1 = p1.z;
-        float z2 = p2.z;
-
-        // Tangent components
-        float s_x1;
-        float s_x2;
-
-        float s_y1;
-        float s_y2;
-
-        float s_z1;
-        float s_z2;
-
-        // Extra values for Catmull-Rom 
-        float x0;
-        float y0;
-        float z0;
-
-        float x3;  
-        float y3;
-        float z3;
-
-        // Catmull-Rom tangent components
-        if (previousPoint == 0) {
-            x3 = controlPoints[nextPoint2 + 1].position.x;
-            y3 = controlPoints[nextPoint2 + 1].position.y;
-            z3 = controlPoints[nextPoint2 + 1].position.z;
-  
-            s_x1 = 2*(x2 - x1) - (x3 - x1)/2;
-            s_x2 = (x3 - x1)/2;
-
-            s_y1 = 2*(y2 - y1) - (y3 - y1)/2;
-            s_y2 = (y3 - y1)/2;
-
-            s_z1 = (z2 - z0)/2;
-            s_z2 = 2*(z2 - z1) - (z3 - z1)/2;
-               
-        }
-        else if (nextPoint2 == controlPoints.size() - 1) {
-            x0 = controlPoints[previousPoint-1].position.x;
-            y0 = controlPoints[previousPoint-1].position.y;
-            z0 = controlPoints[previousPoint-1].position.z;
-
-            s_x1 = (x2 - x0)/2;
-            s_x2 = 2*(x2 - x1) - (x2 - x0)/2;
-
-            s_y1 = (y2 - y0)/2;
-            s_y2 = 2*(y2 - y1) - (y2 - y0)/2;
-
-            s_z1 = (z2 - z0)/2;
-            s_z2 = 2*(z2 - z1) - (z2 - z0)/2;
-        }
-        else {
-            x0 = controlPoints[previousPoint-1].position.x;
-            y0 = controlPoints[previousPoint-1].position.y;
-            z0 = controlPoints[previousPoint-1].position.z;
-           
-            x3 = controlPoints[nextPoint2 + 1].position.x;
-            y3 = controlPoints[nextPoint2 + 1].position.y;
-            z3 = controlPoints[nextPoint2 + 1].position.z;
-            
-            s_x1 = (x2 - x0)/2;
-            s_x2 = (x3 - x1)/2;
-
-            s_y1 = (y2 - y0)/2;
-            s_y2 = (y3 - y1)/2;
-        
-            s_z1 = (z2 - z0)/2;
-            s_z2 = (z3 - z1)/2;
-        }
-      
-
-        // Final Values
-        float x_value = x1*f1 + x2*f2 + s_x1*f3 + s_x2*f4;
-        float y_value = y1*f1 + y2*f2 + s_y1*f3 + s_y2*f4;
-        float z_value = z1*f1 + z2*f2 + s_z1*f3 + s_z2*f4;
-
-        // Initialize newPosition, rleturn
-        newPosition.x = x_value;
-        newPosition.y = y_value;
-        newPosition.z = z_value;
-        return newPosition;
+    c0.tangent = getCatmullTangent(nextPoint - 1);
+    c1.tangent = getCatmullTangent(nextPoint);
+    
+    return hermiteInterpolateInternal(c0, c1, time);
 }
