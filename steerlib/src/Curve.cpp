@@ -12,6 +12,8 @@
 #include <util/DrawLib.h>
 #include "Globals.h"
 
+#include <string>
+
 using namespace Util;
 
 Curve::Curve(const CurvePoint& startPoint, int curveType) : type(curveType)
@@ -51,26 +53,22 @@ void Curve::drawCurve(Color curveColor, float curveThickness, int window)
 	assert(window > 0);
 
 	// Move on the curve from t=0 to t=finalPoint, using window as step size, and linearly interpolate the curve points
-	float startTime = controlPoints.front().time;
-	float endTime = controlPoints.back().time;
-	float diff = endTime - startTime;
-	unsigned int previousPointIndex = 0;
-	unsigned int currentPointIndex = 0;
-
-	assert(diff > 0);
-
-	for (int i = 0; i < window; i++) {
-		// The ratio goes from 0 (starting point) and to 1 (final point).
-		float ratio = (float)(i) / window;
-		// Note: Renish mentioned something about the time being normalized for this method.
-		// It isn't clear to me whether I should pass the exact time (as I am now) or
-		// the normalized time to findTimeInterval. Regardless, it should be easy to switch.
-		findTimeInterval(currentPointIndex, ratio * diff + startTime);
-		Point from = controlPoints[previousPointIndex].position;
-		Point to = controlPoints[currentPointIndex].position;
-		DrawLib::drawLine(from, to, curveColor);
-		previousPointIndex = currentPointIndex;
+	for (int i = 1; i < controlPoints.size(); i++) {
+		CurvePoint c0 = controlPoints[i - 1];
+		CurvePoint c1 = controlPoints[i];
+		float timeDifference = c1.time - c0.time;
+		Point previousPoint = c0.position;
+		for (int step = 1; step <= window; step++) {
+			// ratio ranges from 0 (starting point) and to 1 (final point).
+			float ratio = (float)(step) / window;
+			float time = c0.time + timeDifference * ratio;
+			Point curvePoint; 
+			calculatePoint(curvePoint, time);
+			DrawLib::drawLine(previousPoint, curvePoint, curveColor);
+			previousPoint = curvePoint;
+		}
 	}
+
 	
 #endif
 }
@@ -129,18 +127,18 @@ bool Curve::calculatePoint(Point& outputPoint, float time)
 bool Curve::checkRobust()
 {
     //make sure type of curve is specified and there are at least two points
-    if (controlPoints.size() < 2 || type != 0 && type != 1)
-        return false
-
-    //make sure each control point is in ascending order
-    if (controlPoints[0].time < 0)
-        return false
+	if (controlPoints.size() < 2 || type != 0 && type != 1)
+		return false;
+		
+		//make sure each control point is in ascending order
+	if (controlPoints[0].time < 0)
+		return false;
 
     for (int i = 1; i < controlPoints.size() - 1; i++){
-        if (controlPoints[i - 1].time > controlPoints[i].time)
-            return false 
-        if (controlPoints[i].time < 0)
-            return false
+		if (controlPoints[i - 1].time > controlPoints[i].time)
+			return false;
+		if (controlPoints[i].time < 0)
+			return false;
     }
     /*
 	//================DELETE THIS PART AND THEN START CODING===================
@@ -155,7 +153,7 @@ bool Curve::checkRobust()
     
 	return true;
     */
-    return true
+	return true;
 }
 
 // Find the current time interval (i.e. index of the next control point to follow according to current time)
@@ -165,7 +163,7 @@ bool Curve::findTimeInterval(unsigned int& nextPoint, float time)
 	for(int i=0; i < controlPoints.size(); i++) {
         //Check to see if any of the control points are beyond current time.
         //Already sorted by the point of calling function so just have to find first point
-        if(controlPoints[i].time > time) {
+        if(controlPoints[i].time >= time) {
             //Found a point
             nextPoint = i;
             return true;
@@ -180,91 +178,51 @@ bool Curve::findTimeInterval(unsigned int& nextPoint, float time)
 // Implement Hermite curve
 Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
 {
+	assert(nextPoint > 0);
 	Point newPosition;
-        unsigned int previousPoint;
-        unsigned int nextPoint2;
 
-        // If nextPoint is 0, we look ahead in the array  
-        if (nextPoint == 0) {
-            previousPoint = 0;
-            nextPoint2 = 1;
-        }
-        // Otherwise, we look behind in the array
-        else { 
-            previousPoint = nextPoint - 1;
-            nextPoint2 = nextPoint;
-        }
-       
-        // Point Vectors
-        Point p1 = controlPoints[previousPoint].position;
-        Point p2 = controlPoints[nextPoint2].position;
+	CurvePoint c1 = controlPoints[nextPoint - 1];
+	CurvePoint c2 = controlPoints[nextPoint];
 
-        // Tangent Vectors
-        Vector s1 = controlPoints[previousPoint].tangent;
-        Vector s2 = controlPoints[nextPoint2].tangent;
+    // Point Vectors
+    Point p1 = c1.position;
+    Point p2 = c2.position;
 
-        // Times
-        float t1 = controlPoints[previousPoint].time;
-        float t2 = controlPoints[nextPoint2].time; 
+    // Tangent Vectors
+    Vector s1 = c1.tangent;
+    Vector s2 = c2.tangent;
+
+    // Times
+    float t1 = c1.time;
+    float t2 = c2.time; 
         
-        // If input time isn't in interval, return 0 vector
-        if (!(time >= t1 && time <= t2)) {
-            newPosition.x = 0;
-            newPosition.y = 0;
-            newPosition.z = 0;
-            return newPosition; 
-        }
+    // If input time isn't in interval, return 0 vector
+    if (!(time >= t1 && time <= t2)) {
+        newPosition.x = 0;
+        newPosition.y = 0;
+        newPosition.z = 0;
+        return newPosition; 
+    }
 
-        // Time values
-        float interval = t2 - t1;      
-        float itSq   = interval*interval;
-        float itCub  = itSq*interval;
+    // Time values
+    float interval = t2 - t1;      
+    float itSq   = interval*interval;
+    float itCub  = itSq*interval;
 
-        float t_ti    = time - t1;
-        float t_tiSq  = t_ti*t_ti; 
-        float t_tiCub = t_tiSq*t_ti;
+    float t_ti    = time - t1;
+    float t_tiSq  = t_ti*t_ti; 
+    float t_tiCub = t_tiSq*t_ti;
 
-        // Basis functions
-        float f1 = 2*(t_tiCub/itCub) - 3*(t_tiSq/itSq) + 1;
-        float f2 = -2*(t_tiCub/itCub) + 3*(t_tiSq/itSq);
-        float f3 = (t_tiCub/itSq) - 2*(t_tiSq/interval) + t_ti;
-        float f4 = (t_tiCub/itSq) - (t_tiSq/interval); 
+    // Basis functions
+    float f1 = 2*(t_tiCub/itCub) - 3*(t_tiSq/itSq) + 1;
+    float f2 = -2*(t_tiCub/itCub) + 3*(t_tiSq/itSq);
+    float f3 = (t_tiCub/itSq) - 2*(t_tiSq/interval) + t_ti;
+    float f4 = (t_tiCub/itSq) - (t_tiSq/interval); 
 
-        // Position components
-        float x1 = p1.x;    
-        float x2 = p2.x;
-
-        float y1 = p1.y;
-        float y2 = p2.y;
-
-        float z1 = p1.z;
-        float z2 = p2.z;
-  
-        // Tangent components
-        float s_x1 = s1.x;
-        float s_x2 = s2.x;
-
-        float s_y1 = s1.y;
-        float s_y2 = s2.y;
-
-        float s_z1 = s1.z;
-        float s_z2 = s2.z;
-   	
-        // Final Values
-        float x_value = x1*f1 + x2*f2 + s_x1*f3 + s_x2*f4;
-        float y_value = y1*f1 + y2*f2 + s_y1*f3 + s_y2*f4;    
-        float z_value = z1*f1 + z2*f2 + s_z1*f3 + s_z2*f4;
-	
-        // Initialize newPosition, rleturn
-        newPosition.x = x_value;
-        newPosition.y = y_value;
-        newPosition.z = z_value;
-	return newPosition;
+	// Points can be multiplied by scalars, they also play well with Vectors.
+	Point value = f1 * p1 + f2 * p2 + f3 * s1 + f4 * s2;
+	return value;
 }
-
-
-
-
 
 // Implement Catmull-Rom curve
 Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
