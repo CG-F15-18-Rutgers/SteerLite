@@ -127,7 +127,7 @@ bool Curve::calculatePoint(Point& outputPoint, float time)
 bool Curve::checkRobust()
 {
     //make sure type of curve is specified and there are at least two points
-<<<<<<< HEAD
+
     if (controlPoints.size() < 2 || type != 0 && type != 1)
         return false;
 
@@ -140,7 +140,7 @@ bool Curve::checkRobust()
             return false; 
         if (controlPoints[i].time < 0)
             return false;
-=======
+
 	if (controlPoints.size() < 2 || type != 0 && type != 1)
 		return false;
 		
@@ -153,7 +153,6 @@ bool Curve::checkRobust()
 			return false;
 		if (controlPoints[i].time < 0)
 			return false;
->>>>>>> 95415bc073eb48811e9729417aea73403f02b24c
     }
     /*
 	//================DELETE THIS PART AND THEN START CODING===================
@@ -168,11 +167,7 @@ bool Curve::checkRobust()
     
 	return true;
     */
-<<<<<<< HEAD
-    return true;
-=======
 	return true;
->>>>>>> 95415bc073eb48811e9729417aea73403f02b24c
 }
 
 // Find the current time interval (i.e. index of the next control point to follow according to current time)
