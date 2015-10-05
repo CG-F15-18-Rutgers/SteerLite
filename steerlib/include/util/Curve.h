@@ -99,7 +99,7 @@ namespace Util {
 		// Implement Catmull-Rom curve
 		Point useCatmullCurve(const unsigned int nextPoint, const float time);
 
-        Vector Curve::getCatmullTangent(const unsigned int pointIndex);
+        Vector getCatmullTangent(const unsigned int pointIndex);
 	};
 }
 
