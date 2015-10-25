@@ -63,38 +63,41 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
 	Util::Vector A0 = -A;
 
 	//Since implementing GJK on 2D space, only need to work with 3 points for check of encompassing origin
-	if (_simplex.size() == 3) {
-		//Get other points
-		Util::Vector C = _simplex[0];
-		Util::Vector B = _simplex[1];
+    if (_simplex.size() == 3) {
+        //Get other points
+        Util::Vector C = _simplex[0];
+        Util::Vector B = _simplex[1];
 
-		//Edges to check
-		Util::Vector AB = B - A;
-		Util::Vector AC = C - A;
+        //Edges to check
+        Util::Vector AB = B - A;
+        Util::Vector AC = C - A;
 
-		//Triple product evaluations: (A x B x C) = B * (C . A) - A * (C . B)
-		//(AC x AB x AC)
-		Util::Vector AB_perp = AB * dot(AC, AC) - AC * (dot(AC, AB));
-		//(AB x AC x AC)
-		Util::Vector AC_perp = AC * dot(AC, AB) - AB * (dot(AC, AC));
+        //Triple product evaluations: (A x B x C) = B * (C . A) - A * (C . B)
+        //(AC x AB x AC)
+        Util::Vector AB_perp = AB * dot(AC, AC) - AC * (dot(AC, AB));
+        //(AB x AC x AC)
+        Util::Vector AC_perp = AC * dot(AC, AB) - AB * (dot(AC, AC));
 
-	    if (dot(AB_perp, A0) > 0) {
-		    //if the origin beyond AB, remove point C
-		    _simplex.erase(_simplex.begin());
+        if (dot(AB_perp, A0) > 0) {
+            //if the origin beyond AB, remove point C
+            _simplex.erase(_simplex.begin());
 
-		    //set new direction
-		    _direction = AB_perp;
+            //set new direction
+            _direction = AB_perp;
 
-	    } else if (dot(AC_perp, A0) > 0) {
-			//if the origin beyond AC, remove point B
-			_simplex.erase(_simplex.begin() + 1);
-			//set new direction
-			_direction = AC_perp;
+        }
+        else if (dot(AC_perp, A0) > 0) {
+            //if the origin beyond AC, remove point B
+            _simplex.erase(_simplex.begin() + 1);
+            //set new direction
+            _direction = AC_perp;
 
-		} else {
-			//origin is within or touching simplex, collision
-			return true;
-		}
+        }
+        else {
+            //origin is within or touching simplex, collision
+            return true;
+        }
+    }
 	else {
 		//there are only 2 points in the symplex
 
@@ -104,7 +107,7 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
 		
 		//get the perpendicular to AB in direction of origin
 		//Triple product evaluation (AB x A0 x AB)
-		Util::Vector AB_perp = A0 * dot(AB, AB) - Ab * dot(AB, A0);
+		Util::Vector AB_perp = A0 * dot(AB, AB) - AB * dot(AB, A0);
 		//set new direction
 		_direction = AB_perp;
 	}
@@ -127,34 +130,15 @@ Util::Vector SteerLib::GJK_EPA::support(const std::vector<Util::Vector> _shape, 
 
 	//go through each of the points and test if the dot product with _direction is higher
 	for(int i = 0; i < numPoints; i++) {
-		float tempDot = dot(shape[i], _direction);
+		float tempDot = dot(_shape[i], _direction);
 		if(tempDot > furthestDot) {
 			//if new dot product is higher than furthestDot, set furthest to current point and furthestDot to correspond to that point's dot product
-			furthest = shape[i];
+			furthest = _shape[i];
 			furthestDot = tempDot;
 		}
 	}
 
 	return furthest;
-}
-
-
-/**
- * Name: dot
- * Parameters: Util::Vector _vect1, Util::Vector _vect2
- * Description: Computes the dot product of two vectors _vect1 and _vect2
- * Returns: float result of dot product
- */
-float SteerLib::GJK_EPA::dot(Util::Vector _vect1, Util::Vector _vect2) {
-	//(x3 = x1 * x2, y3 = y1 * y2, z3 = z1 * z2)
-	Util::Vector dotVect = _vect1 * _vect2;
-	float sum  = 0.0f;
-
-	//0 + x3 + y3 + z3
-	for(int i = 0; i < 3; i++) {
-		sum += dotVect[i];
-	}
-	return sum;
 }
 
 
@@ -190,7 +174,7 @@ bool SteerLib::GJK_EPA::intersect(float& return_penetration_depth, Util::Vector&
 
 	if(GJK(_shapeA, _shapeB, simplex)) {
 		//Use collision simplex to compute penetration depth and vector for direction
-		EPA(const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB, std::vector<Util::Vector>& _simplex, float& return_penetration_depth, Util::Vector& return_penetration_vector);
+		//EPA(const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB, std::vector<Util::Vector>& _simplex, float& return_penetration_depth, Util::Vector& return_penetration_vector);
 
 		//There's a collision, so must return true regardless of penetration_depth/vector
 		return true;

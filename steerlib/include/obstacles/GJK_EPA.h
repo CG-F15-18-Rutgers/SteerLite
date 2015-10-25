@@ -129,6 +129,10 @@ namespace SteerLib
             static bool intersect(float& return_penetration_depth, Util::Vector& return_penetration_vector, const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB);
 
         private:
+            static bool SteerLib::GJK_EPA::GJK(const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB, std::vector<Util::Vector>& _simplex);
+            static bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Util::Vector& _direction);
+            static Util::Vector SteerLib::GJK_EPA::support(const std::vector<Util::Vector> _shape, Util::Vector _direction);
+            static Util::Vector SteerLib::GJK_EPA::shape_center(const std::vector<Util::Vector>& _shape);
 
     }; // class GJK_EPA
 
