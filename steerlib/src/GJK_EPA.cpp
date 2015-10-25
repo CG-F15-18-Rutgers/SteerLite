@@ -14,9 +14,10 @@ SteerLib::GJK_EPA::GJK_EPA()
 
 
 /**
- *
- *
- *
+ * Name: GJK
+ * Parameters: std::vector<Util::Vector>& _shapeA, std::vector<Util::Vector>& _shapeB, std::vector<Util::Vector>& _simplex
+ * Description: Main GJK algorithm logic. Given two shapes _shapeA and _shapeB, determines whether a collision occurs, determines points of collision if any and populates them into _simplex
+ * Returns: bool result of collision checking
  */
 bool SteerLib::GJK_EPA::GJK(const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB, std::vector<Util::Vector>& _simplex) {
 
@@ -33,13 +34,16 @@ bool SteerLib::GJK_EPA::GJK(const std::vector<Util::Vector>& _shapeA, const std:
 	while(true) {
 		A = support(_shapeA, direction) - support(_shapeB, -direction);
 
+		//means there cannot be a collision because the furthest point is not even past the origin
 		if(dot(A, direction) < 0) {
 			return false;
 		}
+
+		//add new point to simplex
 		_simplex.push_back(A);
 
 		if(nearest_symplex(_simplex, direction)) {
-
+			return true;
 		}
 	}
 }
@@ -52,8 +56,60 @@ bool SteerLib::GJK_EPA::GJK(const std::vector<Util::Vector>& _shapeA, const std:
  * Returns: bool result of checking symplex includes origin
  *
  */
-bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& simplex, Util::Vector& direction) {
+bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Util::Vector& _direction) {
+	//which part of the simplex is closest to origin
+	//most recently added point in simplex, will be closest to origin among points in simplex
+	Util::Vector A = _simplex.back();
+	Util::Vector A0 = -A;
 
+	//Since implementing GJK on 2D space, only need to work with 3 points for check of encompassing origin
+	if (_simplex.size() == 3) {
+		//Get other points
+		Util::Vector C = _simplex[0];
+		Util::Vector B = _simplex[1];
+
+		//Edges to check
+		Util::Vector AB = B - A;
+		Util::Vector AC = C - A;
+
+		//Triple product evaluations: (A x B x C) = B * (C . A) - A * (C . B)
+		//(AC x AB x AC)
+		Util::Vector AB_perp = AB * dot(AC, AC) - AC * (dot(AC, AB));
+		//(AB x AC x AC)
+		Util::Vector AC_perp = AC * dot(AC, AB) - AB * (dot(AC, AC));
+
+	    if (dot(AB_perp, A0) > 0) {
+		    //if the origin beyond AB, remove point C
+		    _simplex.erase(_simplex.begin());
+
+		    //set new direction
+		    _direction = AB_perp;
+
+	    } else if (dot(AC_perp, A0) > 0) {
+			//if the origin beyond AC, remove point B
+			_simplex.erase(_simplex.begin() + 1);
+			//set new direction
+			_direction = AC_perp;
+
+		} else {
+			//origin is within or touching simplex, collision
+			return true;
+		}
+	else {
+		//there are only 2 points in the symplex
+
+		Util::Vector B = _simplex.back();
+
+		Util::Vector AB = B - A;
+		
+		//get the perpendicular to AB in direction of origin
+		//Triple product evaluation (AB x A0 x AB)
+		Util::Vector AB_perp = A0 * dot(AB, AB) - Ab * dot(AB, A0);
+		//set new direction
+		_direction = AB_perp;
+	}
+
+	return false;
 }
 
 
