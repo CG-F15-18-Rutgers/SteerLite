@@ -20,7 +20,7 @@ SteerLib::GJK_EPA::GJK_EPA()
  * Returns: bool result of collision checking
  */
 bool SteerLib::GJK_EPA::GJK(const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB, std::vector<Util::Vector>& _simplex) {
-
+    // TODO: if centerA == centerB what happens?
 	Util::Vector centerA = shape_center(_shapeA);
 	Util::Vector centerB = shape_center(_shapeB);
 
@@ -126,7 +126,7 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
 Util::Vector SteerLib::GJK_EPA::support(const std::vector<Util::Vector> _shape, Util::Vector _direction) {
 	int numPoints = _shape.size();
 	Util::Vector furthest;
-	float furthestDot = dot(furthest, _direction);
+    float furthestDot = std::numeric_limits<float>::lowest();
 
 	//go through each of the points and test if the dot product with _direction is higher
 	for(int i = 0; i < numPoints; i++) {
