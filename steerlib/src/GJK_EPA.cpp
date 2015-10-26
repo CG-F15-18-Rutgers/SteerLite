@@ -72,7 +72,7 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
 
 	//Since implementing GJK on 2D space, only need to work with 3 points for check of encompassing origin
     if (_simplex.size() == 3) {
-        //Get other points
+        //Get other points  
         Util::Vector C = _simplex[0];
         Util::Vector B = _simplex[1];
 
@@ -246,8 +246,6 @@ bool SteerLib::GJK_EPA::intersect(float& return_penetration_depth, Util::Vector&
 	if(GJK(_shapeA, _shapeB, simplex)) {
 		//Use collision simplex to compute penetration depth and vector for direction
         
-        // Debugging. Notice, that the simplex returned by GJK for the polygons_degenerate.xml testcase
-        // has three collinear points. I don't think that's supposed to be the case.
         printShape(simplex);
 
         // Uncomment EPA to test. It works on polygons_test.xml, but not on polygons1.xml. I made a subset
