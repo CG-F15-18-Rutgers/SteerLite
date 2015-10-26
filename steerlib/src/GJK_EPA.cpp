@@ -6,7 +6,7 @@
 
 
 #include "obstacles/GJK_EPA.h"
-
+#include <limits>
 
 // For debugging only, remove before submitting.
 void printShape(const std::vector<Util::Vector>& shape) {
