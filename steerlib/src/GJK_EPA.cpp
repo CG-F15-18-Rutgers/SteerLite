@@ -8,6 +8,14 @@
 #include "obstacles/GJK_EPA.h"
 
 
+// For debugging only, remove before submitting.
+void printShape(const std::vector<Util::Vector>& shape) {
+    std::cout << "Simplex consists of:" << std::endl;
+    for (Util::Vector point : shape) {
+        std::cout << point << std::endl;
+    }
+}
+
 SteerLib::GJK_EPA::GJK_EPA()
 {
 }
@@ -72,11 +80,10 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
         Util::Vector AB = B - A;
         Util::Vector AC = C - A;
 
-        //Triple product evaluations: (A x B x C) = B * (C . A) - A * (C . B)
-        //(AC x AB x AC)
-        Util::Vector AB_perp = AB * dot(AC, AC) - AC * (dot(AC, AB));
+        //(AC x AB x AB)
+        Util::Vector AB_perp = cross(cross(AC, AB), AB);
         //(AB x AC x AC)
-        Util::Vector AC_perp = AC * dot(AC, AB) - AB * (dot(AC, AC));
+        Util::Vector AC_perp = cross(cross(AB, AC), AC);
 
         if (dot(AB_perp, A0) > 0) {
             //if the origin beyond AB, remove point C
@@ -164,6 +171,70 @@ Util::Vector SteerLib::GJK_EPA::shape_center(const std::vector<Util::Vector>& _s
 	return origin;
 }
 
+void SteerLib::GJK_EPA::EPA(
+    const std::vector<Util::Vector>& shapeA,
+    const std::vector<Util::Vector>& shapeB,
+    std::vector<Util::Vector>& simplex,
+    float& penetration_depth,
+    Util::Vector& penetration_vector) {
+    while (true) {
+        Util::Vector normal;
+        int indexA, indexB;
+
+        // Get the closest edge, along with it's normal and distance to origin along normal.
+        float distance = findClosestEdge(simplex, indexA, indexB, normal);
+        Util::Vector A = simplex[indexA];
+        Util::Vector B = simplex[indexB];
+        Util::Vector p = support(shapeA, normal) - support(shapeB, -normal);
+        double supportDistance = p * normal;
+
+        // More debugging.
+        std::cout << "EPA iteration" << std::endl;
+        printShape(simplex);
+        std::cout << "Edge is " << A << " to " << B << " with distance " << distance << std::endl;
+        std::cout << "Support point in direction " << normal << " is " << p << std::endl;
+        std::cout << "Projection onto normal has value " << supportDistance << std::endl;
+
+        
+        // Check if the distance to the support point along the normal isn't much more
+        // then the distance to the closest edge. If so, then we're close enough to
+        // the closest penetration distance.
+        if (supportDistance - distance < .001) {
+            penetration_vector = normal;
+            penetration_depth = supportDistance;
+            return;
+        }
+        else {
+            simplex.insert(simplex.begin() + indexB, p);
+        }
+    }
+
+}
+
+float SteerLib::GJK_EPA::findClosestEdge(const std::vector<Util::Vector>& simplex, int& indexA, int& indexB, Util::Vector& normal) {
+    float closestDistance = std::numeric_limits<float>::max();
+    for (int i = 0; i < simplex.size(); i++) {
+        int j = i + 1 == simplex.size() ? 0 : i + 1;
+        Util::Vector a = simplex[i];
+        Util::Vector b = simplex[j];
+        // The edge is defined by the points a -> b
+        Util::Vector edge = b - a;
+        
+        // Get the normal vector from the edge to the origin.
+        Util::Vector n = normalize(cross(cross(edge, a), edge));
+        //std::cout << "Normal is " << n << std::endl;
+
+        // Now project a (or b) onto n to get the distance
+        double distance = n * a;
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            indexA = i;
+            indexB = j;
+            normal = n;
+        }
+    }
+    return closestDistance;
+}
 
 
 //Look at the GJK_EPA.h header file for documentation and instructions
@@ -174,7 +245,16 @@ bool SteerLib::GJK_EPA::intersect(float& return_penetration_depth, Util::Vector&
 
 	if(GJK(_shapeA, _shapeB, simplex)) {
 		//Use collision simplex to compute penetration depth and vector for direction
-		//EPA(const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB, std::vector<Util::Vector>& _simplex, float& return_penetration_depth, Util::Vector& return_penetration_vector);
+        
+        // Debugging. Notice, that the simplex returned by GJK for the polygons_degenerate.xml testcase
+        // has three collinear points. I don't think that's supposed to be the case.
+        printShape(simplex);
+
+        // Uncomment EPA to test. It works on polygons_test.xml, but not on polygons1.xml. I made a subset
+        // of polygons1.xml named polygons_degenerate.xml which contains only two polygons which cause
+        // an infinite loop.
+        //
+		// EPA(_shapeA, _shapeB, simplex, return_penetration_depth, return_penetration_vector);
 
 		//There's a collision, so must return true regardless of penetration_depth/vector
 		return true;

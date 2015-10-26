@@ -129,10 +129,23 @@ namespace SteerLib
             static bool intersect(float& return_penetration_depth, Util::Vector& return_penetration_vector, const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB);
 
         private:
-            static bool SteerLib::GJK_EPA::GJK(const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB, std::vector<Util::Vector>& _simplex);
-            static bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Util::Vector& _direction);
-            static Util::Vector SteerLib::GJK_EPA::support(const std::vector<Util::Vector> _shape, Util::Vector _direction);
-            static Util::Vector SteerLib::GJK_EPA::shape_center(const std::vector<Util::Vector>& _shape);
+            static bool GJK(
+                const std::vector<Util::Vector>& _shapeA,
+                const std::vector<Util::Vector>& _shapeB,
+                std::vector<Util::Vector>& _simplex);
+
+            static void EPA(
+                const std::vector<Util::Vector>& shapeA,
+                const std::vector<Util::Vector>& shapeB,
+                std::vector<Util::Vector>& simplex,
+                float& penetration_depth,
+                Util::Vector& penetration_vector);
+
+            static bool nearest_symplex(std::vector<Util::Vector>& _simplex, Util::Vector& _direction);
+            static Util::Vector support(const std::vector<Util::Vector> _shape, Util::Vector _direction);
+            static Util::Vector shape_center(const std::vector<Util::Vector>& _shape);
+
+            static float findClosestEdge(const std::vector<Util::Vector>& shape, int& indexA, int& indexB, Util::Vector& normal);
 
     }; // class GJK_EPA
 
