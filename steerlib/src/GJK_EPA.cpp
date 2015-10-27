@@ -1,4 +1,4 @@
-/*!
+    /*!
 *
 * \author VaHiD AzIzI
 *
@@ -28,17 +28,15 @@ SteerLib::GJK_EPA::GJK_EPA()
  * Returns: bool result of collision checking
  */
 bool SteerLib::GJK_EPA::GJK(const std::vector<Util::Vector>& _shapeA, const std::vector<Util::Vector>& _shapeB, std::vector<Util::Vector>& _simplex) {
-    // TODO: if centerA == centerB what happens?
-	Util::Vector centerA = shape_center(_shapeA);
-	Util::Vector centerB = shape_center(_shapeB);
 
-	Util::Vector direction = centerB - centerA;
+    // The choice of initial direction matters. Making it centerB - centerA leads to a degenerate case
+    // for GJK where the simplex ends up touching the origin.
+    Util::Vector direction = Util::Vector(1, 0, 0);
 
 	Util::Vector A = support(_shapeA, direction) - support(_shapeB, -direction);
 	_simplex.push_back(A);
 
 	direction = -A;
-
 	while(true) {
 		A = support(_shapeA, direction) - support(_shapeB, -direction);
 
@@ -76,15 +74,26 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
         Util::Vector C = _simplex[0];
         Util::Vector B = _simplex[1];
 
+        std::cout << "The three points are " << A << " " << B << " " << C << std::endl;
+
         //Edges to check
         Util::Vector AB = B - A;
         Util::Vector AC = C - A;
 
+        Util::Vector BC = C - B; 
+        Util::Vector BA = A - B;
+
         //(AC x AB x AB)
         Util::Vector AB_perp = cross(cross(AC, AB), AB);
+        std::cout << "AB_perp " << AB_perp << std::endl;
         //(AB x AC x AC)
         Util::Vector AC_perp = cross(cross(AB, AC), AC);
+        std::cout << "AC_perp " << AC_perp << std::endl;
 
+        Util::Vector BC_perp = cross(cross(BA, BC), BC);
+
+        std::cout << "AB_perp dot A0 is " << dot(AB_perp, A0) << std::endl;
+        std::cout << "AC_perp dot A0 is " << dot(AC_perp, A0) << std::endl;
         if (dot(AB_perp, A0) > 0) {
             //if the origin beyond AB, remove point C
             _simplex.erase(_simplex.begin());
@@ -100,8 +109,16 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
             _direction = AC_perp;
 
         }
+        else if (dot(BC_perp, -B) > 0) {
+            // Remove point A
+            _simplex.erase(_simplex.begin() + 2);
+            _direction = BC_perp;
+        }
         else {
             //origin is within or touching simplex, collision
+            std::cout << "Origin contained in simplex" << std::endl;
+            std::cout << A << B << C << std::endl;
+            printShape(_simplex);
             return true;
         }
     }
@@ -114,7 +131,7 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
 		
 		//get the perpendicular to AB in direction of origin
 		//Triple product evaluation (AB x A0 x AB)
-		Util::Vector AB_perp = A0 * dot(AB, AB) - AB * dot(AB, A0);
+        Util::Vector AB_perp = cross(cross(AB, A0), AB);
 		//set new direction
 		_direction = AB_perp;
 	}
@@ -177,7 +194,8 @@ void SteerLib::GJK_EPA::EPA(
     std::vector<Util::Vector>& simplex,
     float& penetration_depth,
     Util::Vector& penetration_vector) {
-    while (true) {
+    int limiter = 15;
+    while (true & limiter-- > 0) {
         Util::Vector normal;
         int indexA, indexB;
 
@@ -222,7 +240,6 @@ float SteerLib::GJK_EPA::findClosestEdge(const std::vector<Util::Vector>& simple
         
         // Get the normal vector from the edge to the origin.
         Util::Vector n = normalize(cross(cross(edge, a), edge));
-        //std::cout << "Normal is " << n << std::endl;
 
         // Now project a (or b) onto n to get the distance
         double distance = n * a;
@@ -252,7 +269,12 @@ bool SteerLib::GJK_EPA::intersect(float& return_penetration_depth, Util::Vector&
         // of polygons1.xml named polygons_degenerate.xml which contains only two polygons which cause
         // an infinite loop.
         //
-		// EPA(_shapeA, _shapeB, simplex, return_penetration_depth, return_penetration_vector);
+        // Using a tempSimplex with points actually covering the origin seems to work, leading me to believe the issue is in GJK
+        std::vector<Util::Vector> tempSimplex;
+        tempSimplex.push_back(Util::Vector(2, 0, 1));
+        tempSimplex.push_back(Util::Vector(6, 0, 0));
+        tempSimplex.push_back(Util::Vector(-1, 0, -1));
+		EPA(_shapeA, _shapeB, simplex, return_penetration_depth, return_penetration_vector);
 
 		//There's a collision, so must return true regardless of penetration_depth/vector
 		return true;
