@@ -8,14 +8,6 @@
 #include "obstacles/GJK_EPA.h"
 #include <limits>
 
-// For debugging only, remove before submitting.
-void printShape(const std::vector<Util::Vector>& shape) {
-    std::cout << "Simplex consists of:" << std::endl;
-    for (Util::Vector point : shape) {
-        std::cout << point << std::endl;
-    }
-}
-
 SteerLib::GJK_EPA::GJK_EPA()
 {
 }
@@ -74,8 +66,6 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
         Util::Vector C = _simplex[0];
         Util::Vector B = _simplex[1];
 
-        std::cout << "The three points are " << A << " " << B << " " << C << std::endl;
-
         //Edges to check
         Util::Vector AB = B - A;
         Util::Vector AC = C - A;
@@ -85,15 +75,10 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
 
         //(AC x AB x AB)
         Util::Vector AB_perp = cross(cross(AC, AB), AB);
-        std::cout << "AB_perp " << AB_perp << std::endl;
         //(AB x AC x AC)
         Util::Vector AC_perp = cross(cross(AB, AC), AC);
-        std::cout << "AC_perp " << AC_perp << std::endl;
-
         Util::Vector BC_perp = cross(cross(BA, BC), BC);
 
-        std::cout << "AB_perp dot A0 is " << dot(AB_perp, A0) << std::endl;
-        std::cout << "AC_perp dot A0 is " << dot(AC_perp, A0) << std::endl;
         if (dot(AB_perp, A0) > 0) {
             //if the origin beyond AB, remove point C
             _simplex.erase(_simplex.begin());
@@ -116,9 +101,6 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
         }
         else {
             //origin is within or touching simplex, collision
-            std::cout << "Origin contained in simplex" << std::endl;
-            std::cout << A << B << C << std::endl;
-            printShape(_simplex);
             return true;
         }
     }
@@ -194,8 +176,7 @@ void SteerLib::GJK_EPA::EPA(
     std::vector<Util::Vector>& simplex,
     float& penetration_depth,
     Util::Vector& penetration_vector) {
-    int limiter = 15;
-    while (true & limiter-- > 0) {
+    for (int i = 0; i < shapeA.size() + shapeB.size(); i++) {
         Util::Vector normal;
         int indexA, indexB;
 
@@ -206,14 +187,6 @@ void SteerLib::GJK_EPA::EPA(
         Util::Vector p = support(shapeA, normal) - support(shapeB, -normal);
         double supportDistance = p * normal;
 
-        // More debugging.
-        std::cout << "EPA iteration" << std::endl;
-        printShape(simplex);
-        std::cout << "Edge is " << A << " to " << B << " with distance " << distance << std::endl;
-        std::cout << "Support point in direction " << normal << " is " << p << std::endl;
-        std::cout << "Projection onto normal has value " << supportDistance << std::endl;
-
-        
         // Check if the distance to the support point along the normal isn't much more
         // then the distance to the closest edge. If so, then we're close enough to
         // the closest penetration distance.
@@ -262,19 +235,15 @@ bool SteerLib::GJK_EPA::intersect(float& return_penetration_depth, Util::Vector&
 
 	if(GJK(_shapeA, _shapeB, simplex)) {
 		//Use collision simplex to compute penetration depth and vector for direction
-        
-        printShape(simplex);
 
         // Uncomment EPA to test. It works on polygons_test.xml, but not on polygons1.xml. I made a subset
         // of polygons1.xml named polygons_degenerate.xml which contains only two polygons which cause
         // an infinite loop.
         //
         // Using a tempSimplex with points actually covering the origin seems to work, leading me to believe the issue is in GJK
-        std::vector<Util::Vector> tempSimplex;
-        tempSimplex.push_back(Util::Vector(2, 0, 1));
-        tempSimplex.push_back(Util::Vector(6, 0, 0));
-        tempSimplex.push_back(Util::Vector(-1, 0, -1));
-		EPA(_shapeA, _shapeB, simplex, return_penetration_depth, return_penetration_vector);
+
+        EPA(_shapeA, _shapeB, simplex, return_penetration_depth, return_penetration_vector);
+		
 
 		//There's a collision, so must return true regardless of penetration_depth/vector
 		return true;
