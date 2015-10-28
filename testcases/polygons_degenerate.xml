@@ -1,5 +1,5 @@
 <!--
-  @author VaHiD AzIzI
+  This case results in an infinite loop in our EPA algorithm.
 -->
 
 <SteerBenchTestCase xmlns="http://www.magix.ucla.edu/steerbench"
@@ -20,21 +20,20 @@
     </worldBounds>
   </header>
 
- 
   <polygonObstacle isClosed="true">
-	<vertex> <x>3.0</x> <y>0.0</y> <z>4.0</z> </vertex>
-	<vertex> <x>6.0</x> <y>0.0</y> <z>0.0</z> </vertex>	
-        <vertex> <x>3.0</x> <y>0.0</y> <z>0.0</z> </vertex>
-	<vertex> <x>0.0</x> <y>0.0</y> <z>0.0</z> </vertex>
-	<vertex> <x>3.0</x> <y>0.0</y> <z>-4.0</z> </vertex>
+  <vertex> <x>-2.0</x> <y>0.0</y> <z>-1.0</z> </vertex>
+  <vertex> <x>-1.0</x> <y>0.0</y> <z>1.0</z> </vertex>
+  <vertex> <x>1.0</x> <y>0.0</y> <z>1.0</z> </vertex>
+  <vertex> <x>2.0</x> <y>0.0</y> <z>-1.0</z> </vertex>
+  <vertex> <x>0.0</x> <y>0.0</y> <z>-2.0</z> </vertex>
   </polygonObstacle>
 
   <polygonObstacle isClosed="true">
-        <vertex> <x>5.0</x> <y>0.0</y> <z>-3.0</z> </vertex>
-	<vertex> <x>5.0</x> <y>0.0</y> <z>-5.0</z> </vertex>
-	<vertex> <x>4.0</x> <y>0.0</y> <z>-1.0</z> </vertex>
-	<vertex> <x>7.0</x> <y>0.0</y> <z>-2.0</z> </vertex>
-	<vertex> <x>4.0</x> <y>0.0</y> <z>-4.0</z> </vertex>
+  <vertex> <x>0.0</x> <y>0.0</y> <z>0.0</z> </vertex>
+  <vertex> <x>2.0</x> <y>0.0</y> <z>2.0</z> </vertex>
+  <vertex> <x>4.0</x> <y>0.0</y> <z>1.0</z> </vertex>
+  <vertex> <x>4.0</x> <y>0.0</y> <z>-1.0</z> </vertex>
+  <vertex> <x>2.0</x> <y>0.0</y> <z>-2.0</z> </vertex>
   </polygonObstacle>
  
   <agent>
