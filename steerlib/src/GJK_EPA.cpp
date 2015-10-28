@@ -12,7 +12,6 @@ SteerLib::GJK_EPA::GJK_EPA()
 {
 }
 
-
 /**
  * Name: GJK
  * Parameters: std::vector<Util::Vector>& _shapeA, std::vector<Util::Vector>& _shapeB, std::vector<Util::Vector>& _simplex
@@ -107,13 +106,21 @@ bool SteerLib::GJK_EPA::nearest_symplex(std::vector<Util::Vector>& _simplex, Uti
 	else {
 		//there are only 2 points in the symplex
 
-		Util::Vector B = _simplex.back();
+		Util::Vector B = _simplex[0];
 
 		Util::Vector AB = B - A;
 		
 		//get the perpendicular to AB in direction of origin
 		//Triple product evaluation (AB x A0 x AB)
-        Util::Vector AB_perp = cross(cross(AB, A0), AB);
+        Util::Vector AB_perp = cross(cross(A0, AB), AB);
+        if (AB_perp == Util::Vector()) {
+            // Choose try another!
+            AB_perp = cross(cross(Util::Vector(1, 0, 0), AB), AB);
+        }
+        if (AB_perp == Util::Vector()) {
+            // This must work!
+            AB_perp = cross(cross(Util::Vector(0, 0, 1), AB), AB);
+        }
 		//set new direction
 		_direction = AB_perp;
 	}
