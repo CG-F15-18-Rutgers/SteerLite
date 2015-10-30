@@ -237,7 +237,7 @@ std::pair<float, Util::Point> minimum_distance(Util::Point l1, Util::Point l2, U
 
 Util::Vector SocialForcesAgent::calcProximityForce(float dt)
 {
-    std::cerr<<"<<<calcProximityForce>>> Please Implement my body\n";
+    //std::cerr<<"<<<calcProximityForce>>> Please Implement my body\n";
 
     return Util::Vector(0,0,0);
 }
@@ -245,9 +245,9 @@ Util::Vector SocialForcesAgent::calcProximityForce(float dt)
 
 Vector SocialForcesAgent::calcGoalForce(Vector _goalDirection, float _dt)
 {
-    std::cerr<<"<<<calcGoalForce>>> Please Implement my body\n";
-
-    return Util::Vector(0,0,0);
+    // Reference the slides for more info.
+    // Mass * Acceleration (rate of change of velocity)
+    return ((_goalDirection * PERFERED_SPEED) - velocity()) / _dt;
 }
 
 
@@ -263,7 +263,7 @@ Util::Vector SocialForcesAgent::calcRepulsionForce(float dt)
 
 Util::Vector SocialForcesAgent::calcAgentRepulsionForce(float dt)
 {
-    std::cerr<<"<<<calcAgentRepulsionForce>>> Please Implement my body\n";
+    //std::cerr<<"<<<calcAgentRepulsionForce>>> Please Implement my body\n";
 
     return Util::Vector(0,0,0);
 }
@@ -271,7 +271,7 @@ Util::Vector SocialForcesAgent::calcAgentRepulsionForce(float dt)
 
 Util::Vector SocialForcesAgent::calcWallRepulsionForce(float dt)
 {
-    std::cerr<<"<<<calcWallRepulsionForce>>> Please Implement my body\n";
+    //std::cerr<<"<<<calcWallRepulsionForce>>> Please Implement my body\n";
 
     return Util::Vector(0,0,0);
 }
@@ -516,8 +516,8 @@ void SocialForcesAgent::updateAI(float timeStamp, float dt, unsigned int frameNu
 	{
 		alpha=0;
 	}
-
-	_velocity = (prefForce) + repulsionForce + proximityForce;
+    Vector acceleration = (prefForce + repulsionForce + proximityForce) * (1 / AGENT_MASS);
+    _velocity = velocity() + acceleration * dt;
 	// _velocity = velocity() + repulsionForce + proximityForce;
 
 	_velocity = clamp(velocity(), _SocialForcesParams.sf_max_speed);
