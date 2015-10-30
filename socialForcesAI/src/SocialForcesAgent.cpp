@@ -237,9 +237,24 @@ std::pair<float, Util::Point> minimum_distance(Util::Point l1, Util::Point l2, U
 
 Util::Vector SocialForcesAgent::calcProximityForce(float dt)
 {
-    //std::cerr<<"<<<calcProximityForce>>> Please Implement my body\n";
-
-    return Util::Vector(0,0,0);
+    // During recitation the TA said to use the GridDatabase. I'm assuming
+    // he meant to only compute forces for nearby agents or agents within
+    // the line of sight. Right now, for simplicity, I'm considering all 
+    // other agents.
+    // TODO: consider using the GridDatabase instead.
+    const std::vector<SteerLib::AgentInterface*>& agents = gEngine->getAgents();
+    Util::Vector totalForces;
+    for (SteerLib::AgentInterface* otherAgent : agents) {
+        // do not consider influence on self.
+        if (otherAgent->id() == this->id()) continue;
+        float distance = Util::distanceBetween(otherAgent->position(), this->position());
+        float radiusSum = otherAgent->radius() + this->radius();
+        float scale = sf_agent_a * std::exp((radiusSum - distance) / sf_agent_b);
+        // I'm assuming the normal is the direct vector from the other agent.
+        Util::Vector normal = normalize(this->position() - otherAgent->position());
+        totalForces += normal * scale;
+    }
+    return totalForces;
 }
 
 
