@@ -287,24 +287,36 @@ Util::Vector SocialForcesAgent::calcAgentRepulsionForce(float dt)
 Util::Vector SocialForcesAgent::calcWallRepulsionForce(float dt)
 {
     //std::cerr<<"<<<calcWallRepulsionForce>>> Please Implement my body\n";
+
+	// Return value
+	Util::Vector wall_repulsion_force = Util::Vector(0,0,0);
+
 	// If taking all walls in the field into account only
 	//std::set<SteerLib::ObstacleInterface * > walls = gEngine->getObstacles();
-	std::set<SteerLib::ObstacleInterface * > tmp_ob;
+
+	// Populated to be the ObstacleInterface instance corresponding to the nearest wall
+	SteerLib::ObstacleInterface * tmp_ob;
 
 
+	// All nearby objects
 	std::set<SteerLib::SpatialDatabaseItemPtr> _neighbors;
 
-	getSimulationEngine()->getSpatialDatabase()->getItemsInRange(_neighbors,
+	// Populates _neighbors with all nearby objects
+	// within the range specified by the bounds of the object plus the query radius in all directions
+	gEngine->getSpatialDatabase()->getItemsInRange(_neighbors,
 		position().x - (this->_radius + _SocialForcesParams.sf_query_radius),
 		position().x + (this->_radius + _SocialForcesParams.sf_query_radius),
 		position().z - (this->_radius + _SocialForcesParams.sf_query_radius),
 		position().z + (this->_radius + _SocialForcesParams.sf_query_radius),
-		dynamic_cast<SteerLib::SpatialDatabaseItemPtr>(this);
+		dynamic_cast<SteerLib::SpatialDatabaseItemPtr>(this));
 
+	// Iterates over the neighbors
 	for(std::set<SteerLib::SpatialDatabaseItemPtr>::iterator neighbor = _neighbors.begin(); neighbor != _neighbors.end(); neighbor++)
 	{
+		// Finds neighbors that are obstacles (walls)
 		if( !(*neighbor)->isAgent())
 		{
+			//Since reassigned each time, value on exit from loop will be closest wall if any in neighbors
 			tmp_ob = dynamic_cast<SteerLib::ObstacleInterface *>(*neighbor);
 
 		}
@@ -315,6 +327,7 @@ Util::Vector SocialForcesAgent::calcWallRepulsionForce(float dt)
 	}
 
 
+	// Checks if the circles overlap (think GJK_EPA)
 	if(tmp_ob->computePenetration(this->position(), this->radius()) > 0.000001 )
 	{
 		Util::Vector wall_normal = calcWallNormal(tmp_ob);
@@ -325,9 +338,7 @@ Util::Vector SocialForcesAgent::calcWallRepulsionForce(float dt)
 
 		wall_repulsion_force = wall_normal * (min_stuff.first + radius()) * _SocialForcesParams.sf_body_force;
 
-		return wall_repulsion_force;
 	}
-
 
 	// If taking all obstacles in the field into account only
 	/* for (std::set<SteerLib::ObstacleInterface * >::iterator wall_iter = walls.begin();  wall_iter != walls.end();  walls++)
@@ -341,7 +352,7 @@ Util::Vector SocialForcesAgent::calcWallRepulsionForce(float dt)
 	}
 	*/
 
-    return Util::Vector(0,0,0);
+	return wall_repulsion_force;
 }
 
 
