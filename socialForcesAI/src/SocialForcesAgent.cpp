@@ -297,6 +297,8 @@ Util::Vector SocialForcesAgent::calcWallRepulsionForce(float dt)
 	// Populated to be the ObstacleInterface instance corresponding to the nearest wall
 	SteerLib::ObstacleInterface * tmp_ob;
 
+	int check_tmp_ob_assigned = 0;
+
 
 	// All nearby objects
 	std::set<SteerLib::SpatialDatabaseItemPtr> _neighbors;
@@ -318,6 +320,7 @@ Util::Vector SocialForcesAgent::calcWallRepulsionForce(float dt)
 		{
 			//Since reassigned each time, value on exit from loop will be closest wall if any in neighbors
 			tmp_ob = dynamic_cast<SteerLib::ObstacleInterface *>(*neighbor);
+			check_tmp_ob_assigned = 1;
 
 		}
 		else
@@ -327,16 +330,22 @@ Util::Vector SocialForcesAgent::calcWallRepulsionForce(float dt)
 	}
 
 
-	// Checks if the circles overlap (think GJK_EPA)
-	if(tmp_ob->computePenetration(this->position(), this->radius()) > 0.000001 )
-	{
-		Util::Vector wall_normal = calcWallNormal(tmp_ob);
+	// Makes sure tmp_ob is assigned or initialized before accessing its members
+	if(check_tmp_ob_assigned) {
+		// Checks if the circles overlap (think GJK_EPA)
+		if(tmp_ob->computePenetration(this->position(), this->radius()) > 0.000001 )
+		{
+			Util::Vector wall_normal = calcWallNormal(tmp_ob);
 
-		std::pair<Util::Point, Util::Point> line = calcWallPointsFromNormal(tmp_ob, wall_normal);
-		
-		std::pair<float, Util::Point> min_stuff = minimum_distance(line.first, line.second, position());
+			std::pair<Util::Point, Util::Point> line = calcWallPointsFromNormal(tmp_ob, wall_normal);
+			
+			std::pair<float, Util::Point> min_stuff = minimum_distance(line.first, line.second, position());
 
-		wall_repulsion_force = wall_normal * (min_stuff.first + radius()) * _SocialForcesParams.sf_body_force;
+			wall_repulsion_force = wall_normal * (min_stuff.first + radius()) * _SocialForcesParams.sf_body_force;
+
+			std::cout << wall_repulsion_force;
+
+		}
 
 	}
 
