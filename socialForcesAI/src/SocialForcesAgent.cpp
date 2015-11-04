@@ -268,7 +268,7 @@ Util::Vector SocialForcesAgent::calcProximityForce(float dt)
             std::pair<float, Util::Point> min_stuff = minimum_distance(line.first, line.second, position());
             Util::Vector away = normalize(position() - min_stuff.second);
             float distance = Util::distanceBetween(position(), min_stuff.second);
-            float scale = 10 * sf_wall_a * std::exp((this->radius() - distance) / sf_wall_b);
+            float scale = 50 * sf_wall_a * std::exp((this->radius() - distance) / sf_wall_b);
             totalForces += away * scale;
         }
     }
@@ -315,7 +315,7 @@ Util::Vector SocialForcesAgent::calcAgentRepulsionForce(float dt)
         totalForces += normal * k * g;
 
         Util::Vector tangent = rightSideInXZPlane(normal);
-        if (dot(tangent, _prefVelocity) < 0) tangent *= -1;
+        // if (dot(tangent, _prefVelocity) < 0) tangent *= -1;
         totalForces += tangent * k * g;
     }
     return totalForces;
