@@ -257,7 +257,6 @@ Util::Vector SocialForcesAgent::calcProximityForce(float dt)
     return totalForces;
 }
 
-
 Vector SocialForcesAgent::calcGoalForce(Vector _goalDirection, float _dt)
 {
     // Reference the slides for more info.
@@ -278,9 +277,26 @@ Util::Vector SocialForcesAgent::calcRepulsionForce(float dt)
 
 Util::Vector SocialForcesAgent::calcAgentRepulsionForce(float dt)
 {
-    //std::cerr<<"<<<calcAgentRepulsionForce>>> Please Implement my body\n";
-
-    return Util::Vector(0,0,0);
+    int k = 50; // An arbitrary value to scale the force appropriately
+    const std::vector<SteerLib::AgentInterface*>& agents = gEngine->getAgents();
+    Util::Vector totalForces;
+    for (SteerLib::AgentInterface* otherAgent : agents) {
+        // do not consider influence on self.
+        if (otherAgent->id() == this->id()) continue;
+        float distance = Util::distanceBetween(otherAgent->position(), this->position());
+        float radiusSum = otherAgent->radius() + this->radius();
+        int g; // If agents collide, apply force, otherwise, do not
+        if (distance <= radiusSum) {
+                g = 1;
+        }
+        else {
+                g = 0;
+        }
+        // I'm assuming the normal is the direct vector from the other agent.
+        Util::Vector normal = normalize(this->position() - otherAgent->position());
+        totalForces += normal * k * g;
+    }
+    return totalForces;
 }
 
 
