@@ -277,7 +277,7 @@ Util::Vector SocialForcesAgent::calcRepulsionForce(float dt)
 
 Util::Vector SocialForcesAgent::calcAgentRepulsionForce(float dt)
 {
-    int k = 50; // An arbitrary value to scale the force appropriately
+    int k = sf_agent_body_force; // An arbitrary value to scale the force appropriately
     const std::vector<SteerLib::AgentInterface*>& agents = gEngine->getAgents();
     Util::Vector totalForces;
     for (SteerLib::AgentInterface* otherAgent : agents) {
