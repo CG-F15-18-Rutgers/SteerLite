@@ -11,11 +11,39 @@
 #include <vector>
 #include <stack>
 #include <set>
+#include <iostream>
 #include <map>
 #include "SteerLib.h"
 
 namespace SteerLib
 {
+	class SearchNode {
+	public:
+		SearchNode(unsigned int index, float g, float h) : _index(index), _g(g), _h(h), _f(g+h) {}
+		float g() const { return _g; }
+		float g(float val) {
+			_g = val;
+			_f = _g + _h;
+		}
+		float h() const { return _h; }
+		float f() const { return _f; }
+		float index() const { return _index; }
+		void printDebug() const {
+			std::cout << "node.index = " << _index << " node.f = " << _f
+				<< " node.g = " << _g << " node.h = " << _h << std::endl;
+		}
+	private:
+		SearchNode* _previous;
+		unsigned int _index;
+		// The exact cost of reaching this node from the start.
+		float _g;
+		// The estimated cost of reaching the goal from this node.
+		float _h;
+		// The value used for choosing the next node to expand.
+		float _f;
+		bool _expanded = false;
+		bool _visited = false;
+	};
 
 	/*
 		@function The AStarPlannerNode class gives a suggested container to build your search tree nodes.
@@ -97,6 +125,8 @@ namespace SteerLib
 
 			bool computePath(std::vector<Util::Point>& agent_path, Util::Point start, Util::Point goal, SteerLib::GridDatabase2D * _gSpatialDatabase, bool append_to_path = false);
 		private:
+			void _tryToAdd(unsigned int x, unsigned int z, const SearchNode& from, float cost, Util::Point goal, std::vector<SearchNode>& out);
+			std::vector<SearchNode> _expand(const SearchNode& node, Util::Point goal);
 			SteerLib::GridDatabase2D * gSpatialDatabase;
 	};
 

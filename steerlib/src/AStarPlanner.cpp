@@ -4,6 +4,7 @@
 //
 
 
+#include <array>
 #include <vector>
 #include <stack>
 #include <set>
@@ -73,9 +74,53 @@ namespace SteerLib
 	{
 		gSpatialDatabase = _gSpatialDatabase;
 
-		//TODO
-		std::cout<<"\nIn A*";
+		// As of now, I've implemented an expand method which returns a list of traversable neighbors,
+		// and computes the g, h, and f values.
 
+		// The following example prints out the neighbors of the start node.
+		int startIndex = gSpatialDatabase->getCellIndexFromLocation(start);
+		SearchNode startNode(startIndex, 0, 0);
+		std::vector<SearchNode> neighbors = _expand(startNode, goal);
+		std::cout << "Neighbors to start node are as follows:\n";
+		for (const SearchNode& node: neighbors) {
+			node.printDebug();
+		}
+
+		// TODO: The next step is to make open and closed sets, initialize the open set with 
+		// startNode then iteratively expand, choosing to expand on the node in the open set with
+		// lowest f value.
 		return false;
+	}
+
+	// Helper method which attempts to add a SearchNode to the output vector if it is traversable.
+	void AStarPlanner::_tryToAdd(unsigned int x, unsigned int z, const SearchNode& from, float cost, Util::Point goal, std::vector<SearchNode>& out) {
+		int index = gSpatialDatabase->getCellIndexFromGridCoords(x, z);
+		if (!canBeTraversed(index)) return;
+		Util::Point p;
+		gSpatialDatabase->getLocationFromIndex(index, p);
+		float h = distanceBetween(p, goal);
+		out.push_back(SearchNode(index, from.g() + cost, h));
+	}
+
+	// Returns a list of neighboring traversable cells.
+	std::vector<SearchNode> AStarPlanner::_expand(const SearchNode& node, const Util::Point goal) {
+		unsigned int x, z;
+		int index;
+		std::vector<SearchNode> out;
+		gSpatialDatabase->getGridCoordinatesFromIndex(node.index(), x, z);
+
+		// Try to add the four cardinal directions.
+		_tryToAdd(x - 1, z, node, 1, goal, out);
+		_tryToAdd(x + 1, z, node, 1, goal, out);
+		_tryToAdd(x, z - 1, node, 1, goal, out);
+		_tryToAdd(x, z + 1, node, 1, goal, out);
+
+		// Try the diagonals, with cost approximately sqrt(2).
+		_tryToAdd(x - 1, z - 1, node, 1.414f, goal, out);
+		_tryToAdd(x - 1, z + 1, node, 1.414f, goal, out);
+		_tryToAdd(x + 1, z - 1, node, 1.414f, goal, out);
+		_tryToAdd(x + 1, z + 1, node, 1.414f, goal, out);
+
+		return std::move(out);
 	}
 }
