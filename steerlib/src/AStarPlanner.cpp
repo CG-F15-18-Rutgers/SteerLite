@@ -68,111 +68,102 @@ namespace SteerLib
 		gSpatialDatabase->getLocationFromIndex(id, p);
 		return p;
 	}
+    
 
+    // This operator overload is necessary for std::find.
+    bool operator==(const SearchNodePtr& a, const SearchNodePtr& b) {
+        return a->index() ==  b->index();
+    }
 
+    // This operator overload is necessary for std::min_element.
+    bool operator<(const SearchNodePtr& a, const SearchNodePtr& b) {
+        if (a->f() == b->f()) {
+            return a->g() > b->g();
+        }
+        else {
+            return a->f() < b->f();
+        }
+    }
 
 	bool AStarPlanner::computePath(std::vector<Util::Point>& agent_path,  Util::Point start, Util::Point goal, SteerLib::GridDatabase2D * _gSpatialDatabase, bool append_to_path)
 	{
 		gSpatialDatabase = _gSpatialDatabase;
 
-		// As of now, I've implemented an expand method which returns a list of traversable neighbors,
-		// and computes the g, h, and f values.
-
-		// The following example prints out the neighbors of the start node.
 		int startIndex = gSpatialDatabase->getCellIndexFromLocation(start);
-		SearchNode startNode(startIndex, 0, 0);
-		std::vector<SearchNode> neighbors = _expand(startNode, goal);
-		std::cout << "Neighbors to start node are as follows:\n";
-		for (const SearchNode& node: neighbors) {
-			node.printDebug();
-		}
+		SearchNodePtr startNode(new SearchNode(startIndex, 0, 0));
 
 		int goalIndex = gSpatialDatabase->getCellIndexFromLocation(goal);
 
-		std::vector<SearchNode> open;
-		std::vector<SearchNode> closed;
-		SearchNode* goalNode = nullptr;
+		std::vector<SearchNodePtr> open;
+		std::vector<SearchNodePtr> closed;
+		SearchNodePtr goalNode(nullptr);
 		open.push_back(startNode);
+
 		while (!open.empty()) {
-
-			// Get the node with the minimum f.
-			std::vector<SearchNode>::iterator minIter;
-			float minF = std::numeric_limits<float>::max();
-			for (std::vector<SearchNode>::iterator iter = open.begin(); iter != open.end(); iter++) {
-				if (iter->f() < minF) {
-					minF = iter->f();
-					minIter = iter;
-				}
-			}
-
-			SearchNode minNode = *minIter;
+			// Get the node with the minimum f, breaking ties on g. 
+            std::vector<SearchNodePtr>::iterator minIter = std::min_element(open.begin(), open.end());
+			SearchNodePtr minNode = *minIter;
 			open.erase(minIter);
 
-			if (minNode.index() == goalIndex) {
-				std::cout << "Visiting goal \n";
-				goalNode = &minNode;
+            // If we're visiting the goal, we're finished.
+			if (minNode->index() == goalIndex) {
+				goalNode = minNode;
 				break;
 			}
 
 			// Expand this node.
-			std::cout << "Expanding node \n";
-			minNode.printDebug();
-			std::vector<SearchNode> expanded = _expand(minNode, goal);
-			for (SearchNode& node : expanded) {
+			std::vector<SearchNodePtr> expandedList = _expand(minNode, goal);
+			for (SearchNodePtr& expandedNode : expandedList) {
 				// If this cell is already in the open set, check if this is a cheaper path.
-				std::vector<SearchNode>::iterator iter = std::find(open.begin(), open.end(), node);
+				std::vector<SearchNodePtr>::iterator iter = std::find(open.begin(), open.end(), expandedNode);
 				if (iter != open.end()) {
-					std::cout << "Node is in the open set\n";
-					if (node.g() < iter->g()) {
-						iter->g(node.g());
-						iter->prev(&minNode);
-						assert(node.index() != minNode.index());
+					if (expandedNode->g() < (*iter)->g()) {
+						(*iter)->g(expandedNode->g());
+						(*iter)->prev(minNode);
 					}
 				} else {
-					if (std::find(closed.begin(), closed.end(), node) == closed.end()) {
-						node.prev(&minNode);
-						assert(node.index() != minNode.index());
-						open.push_back(node);
+					if (std::find(closed.begin(), closed.end(), expandedNode) == closed.end()) {
+						expandedNode->prev(minNode);
+						open.push_back(expandedNode);
 					}
 				}
 			}
 			closed.push_back(minNode);
 		}
 
+        // Check if a path to the goal was not found.
 		if (goalNode == nullptr) {
 			return false;
 		}
 
 		// Go back from goal node to start.
-		SearchNode* ptr = goalNode;
+		SearchNodePtr ptr = goalNode;
 		while (ptr != nullptr) {
-			Util::Point pt;
-			gSpatialDatabase->getLocationFromIndex(ptr->index(), pt);
-			agent_path.insert(agent_path.begin(), pt);
-			ptr->printDebug();
+			Util::Point point;
+			gSpatialDatabase->getLocationFromIndex(ptr->index(), point);
+			agent_path.insert(agent_path.begin(), point);
 			ptr = ptr->prev();
 		}
 
-		// TODO: fix the previous links.
 		return true;
 	}
 
 	// Helper method which attempts to add a SearchNode to the output vector if it is traversable.
-	void AStarPlanner::_tryToAdd(unsigned int x, unsigned int z, const SearchNode& from, float cost, Util::Point goal, std::vector<SearchNode>& out) {
+	void AStarPlanner::_tryToAdd(unsigned int x, unsigned int z, const SearchNodePtr& from, float cost, Util::Point goal, std::vector<SearchNodePtr>& out) {
 		int index = gSpatialDatabase->getCellIndexFromGridCoords(x, z);
 		if (!canBeTraversed(index)) return;
 		Util::Point p;
 		gSpatialDatabase->getLocationFromIndex(index, p);
 		float h = distanceBetween(p, goal);
-		out.push_back(SearchNode(index, from.g() + cost, h));
+		out.push_back(SearchNodePtr(new SearchNode(index, from->g() + cost, h)));
 	}
 
 	// Returns a list of neighboring traversable cells.
-	std::vector<SearchNode> AStarPlanner::_expand(const SearchNode& node, const Util::Point goal) {
+	std::vector<SearchNodePtr> AStarPlanner::_expand(const SearchNodePtr& node, const Util::Point goal) {
 		unsigned int x, z;
 		int index;
-		std::vector<SearchNode> out;
-		gSpatialDatabase->getGridCoordinatesFromIndex(node.index(), x, z);
+		std::vector<SearchNodePtr> out;
+		gSpatialDatabase->getGridCoordinatesFromIndex(node->index(), x, z);
 
 		// Try to add the four cardinal directions.
 		_tryToAdd(x - 1, z, node, 1, goal, out);
@@ -181,10 +172,13 @@ namespace SteerLib
 		_tryToAdd(x, z + 1, node, 1, goal, out);
 
 		// Try the diagonals, with cost approximately sqrt(2).
-		_tryToAdd(x - 1, z - 1, node, 1.414f, goal, out);
-		_tryToAdd(x - 1, z + 1, node, 1.414f, goal, out);
-		_tryToAdd(x + 1, z - 1, node, 1.414f, goal, out);
-		_tryToAdd(x + 1, z + 1, node, 1.414f, goal, out);
+        // NOTE: I realized that for part 1, the diagonal costs should be
+        // equal to the regular costs. Therefore, for part 3, we only need to increase
+        // the costs below.
+		_tryToAdd(x - 1, z - 1, node, 1, goal, out);
+		_tryToAdd(x - 1, z + 1, node, 1, goal, out);
+		_tryToAdd(x + 1, z - 1, node, 1, goal, out);
+		_tryToAdd(x + 1, z + 1, node, 1, goal, out);
 
 		return std::move(out);
 	}
