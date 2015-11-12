@@ -19,18 +19,27 @@ namespace SteerLib
 {
 	class SearchNode {
 	public:
-		SearchNode(unsigned int index, float g, float h) : _index(index), _g(g), _h(h), _f(g+h) {}
+		SearchNode(unsigned int index, float g, float h) : _index(index), _g(g), _h(h), _f(g+h), _previous(nullptr) {}
 		float g() const { return _g; }
-		float g(float val) {
+		void g(float val) {
 			_g = val;
 			_f = _g + _h;
 		}
 		float h() const { return _h; }
 		float f() const { return _f; }
 		float index() const { return _index; }
+		void prev(SearchNode* node) {
+			this->_previous = node;
+		}
+		SearchNode* prev() {
+			return this->_previous;
+		}
 		void printDebug() const {
 			std::cout << "node.index = " << _index << " node.f = " << _f
 				<< " node.g = " << _g << " node.h = " << _h << std::endl;
+		}
+		bool operator==(const SearchNode& other) {
+			return _index == other._index;
 		}
 	private:
 		SearchNode* _previous;

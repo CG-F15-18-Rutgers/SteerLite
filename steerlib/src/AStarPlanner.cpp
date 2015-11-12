@@ -14,6 +14,7 @@
 #include <functional>
 #include <queue>
 #include <math.h>
+#include <limits>
 #include "planning/AStarPlanner.h"
 
 
@@ -86,10 +87,74 @@ namespace SteerLib
 			node.printDebug();
 		}
 
-		// TODO: The next step is to make open and closed sets, initialize the open set with 
-		// startNode then iteratively expand, choosing to expand on the node in the open set with
-		// lowest f value.
-		return false;
+		int goalIndex = gSpatialDatabase->getCellIndexFromLocation(goal);
+
+		std::vector<SearchNode> open;
+		std::vector<SearchNode> closed;
+		SearchNode* goalNode = nullptr;
+		open.push_back(startNode);
+		while (!open.empty()) {
+
+			// Get the node with the minimum f.
+			std::vector<SearchNode>::iterator minIter;
+			float minF = std::numeric_limits<float>::max();
+			for (std::vector<SearchNode>::iterator iter = open.begin(); iter != open.end(); iter++) {
+				if (iter->f() < minF) {
+					minF = iter->f();
+					minIter = iter;
+				}
+			}
+
+			SearchNode minNode = *minIter;
+			open.erase(minIter);
+
+			if (minNode.index() == goalIndex) {
+				std::cout << "Visiting goal \n";
+				goalNode = &minNode;
+				break;
+			}
+
+			// Expand this node.
+			std::cout << "Expanding node \n";
+			minNode.printDebug();
+			std::vector<SearchNode> expanded = _expand(minNode, goal);
+			for (SearchNode& node : expanded) {
+				// If this cell is already in the open set, check if this is a cheaper path.
+				std::vector<SearchNode>::iterator iter = std::find(open.begin(), open.end(), node);
+				if (iter != open.end()) {
+					std::cout << "Node is in the open set\n";
+					if (node.g() < iter->g()) {
+						iter->g(node.g());
+						iter->prev(&minNode);
+						assert(node.index() != minNode.index());
+					}
+				} else {
+					if (std::find(closed.begin(), closed.end(), node) == closed.end()) {
+						node.prev(&minNode);
+						assert(node.index() != minNode.index());
+						open.push_back(node);
+					}
+				}
+			}
+			closed.push_back(minNode);
+		}
+
+		if (goalNode == nullptr) {
+			return false;
+		}
+
+		// Go back from goal node to start.
+		SearchNode* ptr = goalNode;
+		while (ptr != nullptr) {
+			Util::Point pt;
+			gSpatialDatabase->getLocationFromIndex(ptr->index(), pt);
+			agent_path.insert(agent_path.begin(), pt);
+			ptr->printDebug();
+			ptr = ptr->prev();
+		}
+
+		// TODO: fix the previous links.
+		return true;
 	}
 
 	// Helper method which attempts to add a SearchNode to the output vector if it is traversable.
