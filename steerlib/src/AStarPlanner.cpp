@@ -78,6 +78,7 @@ namespace SteerLib
     // This operator overload is necessary for std::min_element.
     bool operator<(const SearchNodePtr& a, const SearchNodePtr& b) {
         if (a->f() == b->f()) {
+						// TODO: For switching in Part 2, change ">" to "<"
             return a->g() > b->g();
         }
         else {
@@ -154,7 +155,10 @@ namespace SteerLib
 		if (!canBeTraversed(index)) return;
 		Util::Point p;
 		gSpatialDatabase->getLocationFromIndex(index, p);
+
+		// TODO: For Part 1, use distanceBetween for Euclidean distance, and use manhattan_distance for Manhattan distance
 		float h = distanceBetween(p, goal);
+
 		out.push_back(SearchNodePtr(new SearchNode(index, from->g() + cost, h)));
 	}
 
@@ -175,18 +179,48 @@ namespace SteerLib
         // NOTE: I realized that for part 1, the diagonal costs should be
         // equal to the regular costs. Therefore, for part 3, we only need to increase
         // the costs below.
-		_tryToAdd(x - 1, z - 1, node, 1, goal, out);
-		_tryToAdd(x - 1, z + 1, node, 1, goal, out);
-		_tryToAdd(x + 1, z - 1, node, 1, goal, out);
-		_tryToAdd(x + 1, z + 1, node, 1, goal, out);
+		// TODO: For part 1. For part 3, change P1 to P3. For part 4, change P1 to P4 and change the "1" argument to the weight of the heuristic (2,4, or 8)
+		P1_try_diagonals(x, z, node, 1, goal, out);
 
 		return std::move(out);
 	}
 
-	/* Manhattan distance
-	 *
+	/*
+	 * Part 1 diagonal costs
 	 */
-	static float AStarPlanner::Manhattan_distance(Util::Point start, Util::Point end) {
+	void P1_try_diagonals(unsigned int x, unsigned int z, const SearchNodePtr& node, float cost, Util::Point goal, std::vector<SearchNodePtr>& out) {
+		_tryToAdd(x - 1, z - 1, node, 1, goal, out);
+		_tryToAdd(x - 1, z + 1, node, 1, goal, out);
+		_tryToAdd(x + 1, z - 1, node, 1, goal, out);
+		_tryToAdd(x + 1, z + 1, node, 1, goal, out);
+	}
+
+	/*
+	 * Part 3 diagonal costs
+	 */
+	void P3_try_diagonals(unsigned int x, unsigned int z, const SearchNodePtr& node, float cost, Util::Point goal, std::vector<SearchNodePtr>& out) {
+		_tryToAdd(x - 1, z - 1, node, 1.3, goal, out);
+		_tryToAdd(x - 1, z + 1, node, 1.3, goal, out);
+		_tryToAdd(x + 1, z - 1, node, 1.3, goal, out);
+		_tryToAdd(x + 1, z + 1, node, 1.3, goal, out);
+	}
+
+	/*
+	 * Part 4 diagonal costs
+	 */
+	void P4_try_diagonals(unsigned int x, unsigned int z, const SearchNodePtr& node, float cost, Util::Point goal, std::vector<SearchNodePtr>& out) {
+		_tryToAdd(x - 1, z - 1, node, 1 + (3 * cost), goal, out);
+		_tryToAdd(x - 1, z + 1, node, 1 + (3 * cost), goal, out);
+		_tryToAdd(x + 1, z - 1, node, 1 + (3 * cost), goal, out);
+		_tryToAdd(x + 1, z + 1, node, 1 + (3 * cost), goal, out);
+	}
+
+
+
+	/*
+	 * Manhattan distance
+	 */
+	static float AStarPlanner::manhattan_distance(Util::Point start, Util::Point end) {
 		Util::Point x1 = Util::Point(start.x, 0.0f, 0.0f);
 		Util::Point x2 = Util::Point(end.x, 0.0f, 0.0f);
 

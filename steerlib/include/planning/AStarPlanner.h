@@ -135,7 +135,7 @@ namespace SteerLib
 			SteerLib::GridDatabase2D * gSpatialDatabase;
 
       // Manhattan distance
-      static float Manhattan_distance(Util::Point start, Util::Point end);
+      static float manhattan_distance(Util::Point start, Util::Point end);
 	};
 
 
