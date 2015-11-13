@@ -139,12 +139,23 @@ namespace SteerLib
 
 		// Go back from goal node to start.
 		SearchNodePtr ptr = goalNode;
+		float totalPathCost = 0;
 		while (ptr != nullptr) {
 			Util::Point point;
 			gSpatialDatabase->getLocationFromIndex(ptr->index(), point);
 			agent_path.insert(agent_path.begin(), point);
-			ptr = ptr->prev();
+
+			SearchNodePtr prev = ptr->prev();
+			if (prev == nullptr) break;
+
+			Util::Point prevPoint;
+			gSpatialDatabase->getLocationFromIndex(prev->index(), prevPoint);
+			totalPathCost += distanceBetween(point, prevPoint);
+
+			ptr = prev;
 		}
+
+		std::cout << "\nTotal path cost is " << totalPathCost << std::endl;
 
 		return true;
 	}
@@ -156,8 +167,10 @@ namespace SteerLib
 		Util::Point p;
 		gSpatialDatabase->getLocationFromIndex(index, p);
 
-		// TODO: For Part 1, use distanceBetween for Euclidean distance, and use manhattan_distance for Manhattan distance
-		float h = distanceBetween(p, goal);
+		// CHANGE weight for the weighted A*
+		float weight = 1;
+		// CHANGE to distanceBetween for Euclidean distance and manhattan_distance for Manhattan distance
+		float h = distanceBetween(p, goal) * weight;
 
 		out.push_back(SearchNodePtr(new SearchNode(index, from->g() + cost, h)));
 	}
@@ -175,62 +188,27 @@ namespace SteerLib
 		_tryToAdd(x, z - 1, node, 1, goal, out);
 		_tryToAdd(x, z + 1, node, 1, goal, out);
 
-		// Try the diagonals, with cost approximately sqrt(2).
-        // NOTE: I realized that for part 1, the diagonal costs should be
-        // equal to the regular costs. Therefore, for part 3, we only need to increase
-        // the costs below.
-		// TODO: For part 1. For part 3, change P1 to P3. For part 4, change P1 to P4 and change the "1" argument to the weight of the heuristic (2,4, or 8)
-		P1_try_diagonals(x, z, node, 1, goal, out);
+		// CHANGE diagonalCost for part 3.
+		float diagonalCost = 1;
+		_tryToAdd(x - 1, z - 1, node, diagonalCost, goal, out);
+		_tryToAdd(x - 1, z + 1, node, diagonalCost, goal, out);
+		_tryToAdd(x + 1, z - 1, node, diagonalCost, goal, out);
+		_tryToAdd(x + 1, z + 1, node, diagonalCost, goal, out);
 
 		return std::move(out);
 	}
 
 	/*
-	 * Part 1 diagonal costs
-	 */
-	void P1_try_diagonals(unsigned int x, unsigned int z, const SearchNodePtr& node, float cost, Util::Point goal, std::vector<SearchNodePtr>& out) {
-		_tryToAdd(x - 1, z - 1, node, 1, goal, out);
-		_tryToAdd(x - 1, z + 1, node, 1, goal, out);
-		_tryToAdd(x + 1, z - 1, node, 1, goal, out);
-		_tryToAdd(x + 1, z + 1, node, 1, goal, out);
-	}
-
-	/*
-	 * Part 3 diagonal costs
-	 */
-	void P3_try_diagonals(unsigned int x, unsigned int z, const SearchNodePtr& node, float cost, Util::Point goal, std::vector<SearchNodePtr>& out) {
-		_tryToAdd(x - 1, z - 1, node, 1.3, goal, out);
-		_tryToAdd(x - 1, z + 1, node, 1.3, goal, out);
-		_tryToAdd(x + 1, z - 1, node, 1.3, goal, out);
-		_tryToAdd(x + 1, z + 1, node, 1.3, goal, out);
-	}
-
-	/*
-	 * Part 4 diagonal costs
-	 */
-	void P4_try_diagonals(unsigned int x, unsigned int z, const SearchNodePtr& node, float cost, Util::Point goal, std::vector<SearchNodePtr>& out) {
-		_tryToAdd(x - 1, z - 1, node, 1 + (3 * cost), goal, out);
-		_tryToAdd(x - 1, z + 1, node, 1 + (3 * cost), goal, out);
-		_tryToAdd(x + 1, z - 1, node, 1 + (3 * cost), goal, out);
-		_tryToAdd(x + 1, z + 1, node, 1 + (3 * cost), goal, out);
-	}
-
-
-
-	/*
 	 * Manhattan distance
 	 */
-	static float AStarPlanner::manhattan_distance(Util::Point start, Util::Point end) {
+	float AStarPlanner::manhattan_distance(Util::Point start, Util::Point end) {
 		Util::Point x1 = Util::Point(start.x, 0.0f, 0.0f);
 		Util::Point x2 = Util::Point(end.x, 0.0f, 0.0f);
 
-		Util::Point y1 = Util::Point(0.0f, start.y, 0.0f);
-		Util::Point y2 = Util::Point(0.0f, end.y, 0.0f);
-
 		Util::Point z1 = Util::Point(0.0f, 0.0f, start.z);
-		Util::Point z2 = Util::Point(0.0f, 0.0f, end.z;
+		Util::Point z2 = Util::Point(0.0f, 0.0f, end.z);
 
-		float man_dist = distanceBetween(x1, x2) + distanceBetween(y1, y2) + distanceBetween(z1, z2);
+		float man_dist = distanceBetween(x1, x2) + distanceBetween(z1, z2);
 
 		return man_dist;
 	}
