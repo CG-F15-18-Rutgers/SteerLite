@@ -10,7 +10,7 @@
 #include <set>
 #include <map>
 #include <iostream>
-#include <algorithm> 
+#include <algorithm>
 #include <functional>
 #include <queue>
 #include <math.h>
@@ -30,7 +30,7 @@ namespace SteerLib
 
 	AStarPlanner::~AStarPlanner(){}
 
-	bool AStarPlanner::canBeTraversed ( int id ) 
+	bool AStarPlanner::canBeTraversed ( int id )
 	{
 		double traversal_cost = 0;
 		int current_id = id;
@@ -51,11 +51,11 @@ namespace SteerLib
 			{
 				int index = gSpatialDatabase->getCellIndexFromGridCoords( i, j );
 				traversal_cost += gSpatialDatabase->getTraversalCost ( index );
-				
+
 			}
 		}
 
-		if ( traversal_cost > COLLISION_COST ) 
+		if ( traversal_cost > COLLISION_COST )
 			return false;
 		return true;
 	}
@@ -68,7 +68,7 @@ namespace SteerLib
 		gSpatialDatabase->getLocationFromIndex(id, p);
 		return p;
 	}
-    
+
 
     // This operator overload is necessary for std::find.
     bool operator==(const SearchNodePtr& a, const SearchNodePtr& b) {
@@ -100,7 +100,7 @@ namespace SteerLib
 		open.push_back(startNode);
 
 		while (!open.empty()) {
-			// Get the node with the minimum f, breaking ties on g. 
+			// Get the node with the minimum f, breaking ties on g.
             std::vector<SearchNodePtr>::iterator minIter = std::min_element(open.begin(), open.end());
 			SearchNodePtr minNode = *minIter;
 			open.erase(minIter);
@@ -181,5 +181,23 @@ namespace SteerLib
 		_tryToAdd(x + 1, z + 1, node, 1, goal, out);
 
 		return std::move(out);
+	}
+
+	/* Manhattan distance
+	 *
+	 */
+	static float AStarPlanner::Manhattan_distance(Util::Point start, Util::Point end) {
+		Util::Point x1 = Util::Point(start.x, 0.0f, 0.0f);
+		Util::Point x2 = Util::Point(end.x, 0.0f, 0.0f);
+
+		Util::Point y1 = Util::Point(0.0f, start.y, 0.0f);
+		Util::Point y2 = Util::Point(0.0f, end.y, 0.0f);
+
+		Util::Point z1 = Util::Point(0.0f, 0.0f, start.z);
+		Util::Point z2 = Util::Point(0.0f, 0.0f, end.z;
+
+		float man_dist = distanceBetween(x1, x2) + distanceBetween(y1, y2) + distanceBetween(z1, z2);
+
+		return man_dist;
 	}
 }

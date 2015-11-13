@@ -52,12 +52,12 @@ namespace SteerLib
 
 	/*
 		@function The AStarPlannerNode class gives a suggested container to build your search tree nodes.
-		@attributes 
+		@attributes
 		f : the f value of the node
 		g : the cost from the start, for the node
 		point : the point in (x,0,z) space that corresponds to the current node
 		parent : the pointer to the parent AStarPlannerNode, so that retracing the path is possible.
-		@operators 
+		@operators
 		The greater than, less than and equals operator have been overloaded. This means that objects of this class can be used with these operators. Change the functionality of the operators depending upon your implementation
 
 	*/
@@ -89,7 +89,7 @@ namespace SteerLib
 
 	};
 
-	
+
 
 	class STEERLIB_API AStarPlanner{
 		public:
@@ -133,6 +133,9 @@ namespace SteerLib
 			void _tryToAdd(unsigned int x, unsigned int z, const SearchNodePtr& from, float cost, Util::Point goal, std::vector<SearchNodePtr>& out);
 			std::vector<SearchNodePtr> _expand(const SearchNodePtr& node, Util::Point goal);
 			SteerLib::GridDatabase2D * gSpatialDatabase;
+
+      // Manhattan distance
+      static float Manhattan_distance(Util::Point start, Util::Point end);
 	};
 
 
