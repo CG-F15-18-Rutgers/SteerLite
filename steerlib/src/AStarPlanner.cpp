@@ -78,7 +78,7 @@ namespace SteerLib
     // This operator overload is necessary for std::min_element.
     bool operator<(const SearchNodePtr& a, const SearchNodePtr& b) {
         if (a->f() == b->f()) {
-						// TODO: For switching in Part 2, change ">" to "<"
+			// CHANGE:  ">" to "<" for part 2 and part 4
             return a->g() > b->g();
         }
         else {
