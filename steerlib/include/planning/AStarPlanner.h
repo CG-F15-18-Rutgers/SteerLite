@@ -133,6 +133,7 @@ namespace SteerLib
 			void _tryToAdd(unsigned int x, unsigned int z, const SearchNodePtr& from, float cost, Util::Point goal, std::vector<SearchNodePtr>& out);
 			std::vector<SearchNodePtr> _expand(const SearchNodePtr& node, Util::Point goal);
 			SteerLib::GridDatabase2D * gSpatialDatabase;
+            int numExpanded = 0;
 
       // Manhattan distance
       static float manhattan_distance(Util::Point start, Util::Point end);

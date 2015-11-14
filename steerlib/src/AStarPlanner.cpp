@@ -156,6 +156,7 @@ namespace SteerLib
 		}
 
 		std::cout << "\nTotal path cost is " << totalPathCost << std::endl;
+        std::cout << "\nThe number of expanded nodes is " << numExpanded << std::endl;
 
 		return true;
 	}
@@ -177,6 +178,7 @@ namespace SteerLib
 
 	// Returns a list of neighboring traversable cells.
 	std::vector<SearchNodePtr> AStarPlanner::_expand(const SearchNodePtr& node, const Util::Point goal) {
+        numExpanded++;
 		unsigned int x, z;
 		int index;
 		std::vector<SearchNodePtr> out;
