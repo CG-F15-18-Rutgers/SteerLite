@@ -79,6 +79,10 @@ void SocialForcesAgent::disable()
 	_enabled = false;
 }
 
+void SocialForcesAgent::computePath() {
+    //astar.computePath()
+}
+
 
 void SocialForcesAgent::reset(const SteerLib::AgentInitialConditions & initialConditions, SteerLib::EngineInterface * engineInfo)
 {
@@ -272,8 +276,7 @@ Util::Vector SocialForcesAgent::calcProximityForce(float dt)
             totalForces += away * scale;
         }
     }
-    return Util::Vector();
-    //return totalForces;
+    return totalForces;
 }
 
 Vector SocialForcesAgent::calcGoalForce(Vector _goalDirection, float _dt)
@@ -381,7 +384,6 @@ Util::Vector SocialForcesAgent::calcWallRepulsionForce(float dt)
             }
         }
 	}
-
 	return wall_repulsion_force;
 }
 
@@ -575,16 +577,17 @@ void SocialForcesAgent::updateAI(float timeStamp, float dt, unsigned int frameNu
 
 	SteerLib::AgentGoalInfo goalInfo = _goalQueue.front();
 	Util::Vector goalDirection;
-	if ( ! _midTermPath.empty() && (!this->hasLineOfSightTo(goalInfo.targetLocation)) )
+    if (!_midTermPath.empty())
+    {
+        Util::Point pt = _midTermPath.at(0);
+        if ((position() - pt).lengthSquared() <= (radius()*radius())) {
+            this->_midTermPath.erase(this->_midTermPath.begin());
+        }        
+    }
+
+	if ( ! _midTermPath.empty())
 	{
-		if (reachedCurrentWaypoint())
-		{
-			this->updateMidTermPath();
-		}
-
-		this->updateLocalTarget();
-
-		goalDirection = normalize(_currentLocalTarget - position());
+		goalDirection = normalize(this->_midTermPath.at(0) - position());
 
 	}
 	else
@@ -625,7 +628,7 @@ void SocialForcesAgent::updateAI(float timeStamp, float dt, unsigned int frameNu
 	{
 		alpha=0;
 	}
-	Util::Vector acceleration = (prefForce + repulsionForce + proximityForce) / AGENT_MASS;
+    Util::Vector acceleration = prefForce + repulsionForce + proximityForce;
 	_velocity = velocity() + acceleration * dt;
 	_velocity = clamp(velocity(), _SocialForcesParams.sf_max_speed);
 	_velocity.y=0.0f;
@@ -753,11 +756,18 @@ bool SocialForcesAgent::runLongTermPlanning()
 	std::vector<Util::Point> agentPath;
 	Util::Point pos =  position();
 
-	if ( !gSpatialDatabase->findPath(pos, _goalQueue.front().targetLocation,
-			agentPath, (unsigned int) 50000))
-	{
-		return false;
-	}
+    std::cout << "Attempting to find path" << std::endl;
+    astar.computePath(agentPath, pos, _goalQueue.front().targetLocation, gSpatialDatabase, true);
+	//if ( !gSpatialDatabase->findPath(pos, _goalQueue.front().targetLocation,
+	//		agentPath, (unsigned int) 50000))
+	//{
+	//	return false;
+	//}
+    std::cout << "Long term planning outputs the following points" << std::endl;
+    for (Util::Point p : agentPath) {
+        std::cout << p << " , ";
+    }
+    std::cout << std::endl;
 
 	for  (int i=1; i <  agentPath.size(); i++)
 	{
