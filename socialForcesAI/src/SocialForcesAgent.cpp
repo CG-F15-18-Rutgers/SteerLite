@@ -268,11 +268,12 @@ Util::Vector SocialForcesAgent::calcProximityForce(float dt)
             std::pair<float, Util::Point> min_stuff = minimum_distance(line.first, line.second, position());
             Util::Vector away = normalize(position() - min_stuff.second);
             float distance = Util::distanceBetween(position(), min_stuff.second);
-            float scale = 50 * sf_wall_a * std::exp((this->radius() - distance) / sf_wall_b);
+            float scale = sf_wall_a * std::exp((this->radius() - distance) / sf_wall_b);
             totalForces += away * scale;
         }
     }
-    return totalForces;
+    return Util::Vector();
+    //return totalForces;
 }
 
 Vector SocialForcesAgent::calcGoalForce(Vector _goalDirection, float _dt)
@@ -296,27 +297,40 @@ Util::Vector SocialForcesAgent::calcRepulsionForce(float dt)
 Util::Vector SocialForcesAgent::calcAgentRepulsionForce(float dt)
 {
     int k = sf_agent_body_force; // An arbitrary value to scale the force appropriately
-    const std::vector<SteerLib::AgentInterface*>& agents = gEngine->getAgents();
-    Util::Vector totalForces;
-    for (SteerLib::AgentInterface* otherAgent : agents) {
-        // do not consider influence on self.
-        if (otherAgent->id() == this->id()) continue;
-        float distance = Util::distanceBetween(otherAgent->position(), this->position());
-        float radiusSum = otherAgent->radius() + this->radius();
-        int g; // If agents collide, apply force, otherwise, do not
-        if (distance <= radiusSum) {
-                g = 1;
-        }
-        else {
-                g = 0;
-        }
-        // I'm assuming the normal is the direct vector from the other agent.
-        Util::Vector normal = normalize(this->position() - otherAgent->position());
-        totalForces += normal * k * g;
 
-        Util::Vector tangent = rightSideInXZPlane(normal);
-        // if (dot(tangent, _prefVelocity) < 0) tangent *= -1;
-        totalForces += tangent * k * g;
+    // All nearby objects
+    std::set<SteerLib::SpatialDatabaseItemPtr> _neighbors;
+
+    gEngine->getSpatialDatabase()->getItemsInRange(_neighbors,
+        position().x - (this->_radius + _SocialForcesParams.sf_query_radius),
+        position().x + (this->_radius + _SocialForcesParams.sf_query_radius),
+        position().z - (this->_radius + _SocialForcesParams.sf_query_radius),
+        position().z + (this->_radius + _SocialForcesParams.sf_query_radius),
+        dynamic_cast<SteerLib::SpatialDatabaseItemPtr>(this));
+
+    Util::Vector totalForces;
+    for (auto neighbor : _neighbors) {
+        if (neighbor->isAgent()) {
+            auto otherAgent = dynamic_cast<SteerLib::AgentInterface*>(neighbor);
+            // do not consider influence on self.
+            if (otherAgent->id() == this->id()) continue;
+            float distance = Util::distanceBetween(otherAgent->position(), this->position());
+            float radiusSum = otherAgent->radius() + this->radius();
+            int g; // If agents collide, apply force, otherwise, do not
+            if (distance <= radiusSum) {
+                g = 1;
+            }
+            else {
+                g = 0;
+            }
+            // I'm assuming the normal is the direct vector from the other agent.
+            Util::Vector normal = normalize(this->position() - otherAgent->position());
+            totalForces += normal * k * g;
+
+            Util::Vector tangent = rightSideInXZPlane(normal);
+            // if (dot(tangent, _prefVelocity) < 0) tangent *= -1;
+            totalForces += tangent * k * g;
+        }
     }
     return totalForces;
 }

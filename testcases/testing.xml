@@ -50,36 +50,19 @@
     <name>B</name>
     <initialConditions>
       <radius>0.5</radius>
-      <position> <x>-1</x> <y>0</y> <z>10</z> </position>
+      <position> <x>2</x> <y>0</y> <z>-11</z> </position>
       <direction> <x>0</x> <y>0</y> <z>-1</z> </direction>
       <speed>0</speed>
     </initialConditions>
     <goalSequence>
       <seekStaticTarget>
-        <targetLocation> <x>0</x> <y>0</y> <z>-10</z> </targetLocation>
+        <targetLocation> <x>0</x> <y>0</y> <z>10</z> </targetLocation>
         <desiredSpeed>1.3</desiredSpeed>
         <timeDuration>1000.0</timeDuration>
       </seekStaticTarget>
     </goalSequence>
 
   </agent>
-  
-    <agent>
-    <name>C</name>
-    <initialConditions>
-      <radius>0.5</radius>
-      <position> <x>59.6066</x> <y>0</y> <z>47.4301</z> </position>
-      <direction> <x>0</x> <y>0</y> <z>-1</z> </direction>
-      <speed>0</speed>
-    </initialConditions>
-    <goalSequence>
-      <seekStaticTarget>
-        <targetLocation> <x>3</x> <y>0</y> <z>-90</z> </targetLocation>
-        <desiredSpeed>1.3</desiredSpeed>
-        <timeDuration>1000.0</timeDuration>
-      </seekStaticTarget>
-    </goalSequence>
 
-  </agent>
 
 </SteerBenchTestCase>
