@@ -13,6 +13,7 @@
 ///   - options may be accessible now, is there anything to change because of this?
 
 #include <iostream>
+#include <math.h>
 
 
 #include "simulation/Camera.h"
@@ -103,6 +104,10 @@ void Camera::useNextPointOfInterest()
 
 void Camera::update(float totalTime, float elapsedTime)
 {
+    m_currentView.position.x = 80 * cos(.1f * totalTime);
+    m_currentView.position.y = 70;
+    m_currentView.position.z = 80 * sin(.1f * totalTime);
+
 	if (!m_isInterpolating)
 		return;
 

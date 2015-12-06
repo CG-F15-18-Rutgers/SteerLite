@@ -121,6 +121,7 @@ namespace SteerLib {
 			//Camera animation curve
 			Util::Curve curve;
 
+            float circleT = 0;
 			static const float INTERPOLATE_TIME;
 		};
 	
