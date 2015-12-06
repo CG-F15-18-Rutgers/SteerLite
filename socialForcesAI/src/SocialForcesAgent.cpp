@@ -24,6 +24,7 @@
 
 
 #define AGENT_MASS 1.0f
+#define DRAW_COLLISIONS
 
 
 using namespace Util;
@@ -106,18 +107,20 @@ void SocialForcesAgent::reset(const SteerLib::AgentInitialConditions & initialCo
 	_radius = initialConditions.radius;
 	_velocity = initialConditions.speed * _forward;
 
-    if (id() % 13 == 1) {
-        _type = AgentType::DEATH;
-        _color = Color(0, 0, 0);
-    }
-    else if (id() % 2 == 1) {
-        _type = AgentType::MALE;
-        _color = Color(255, 100, 0);
-    }
-    else {
-        _type = AgentType::FEMALE;
-        _color = Color(0, 150, 200);
-        _invincibleTimer = 0;
+    if (_typesEnabled) {
+        if (id() % 13 == 1) {
+            _type = AgentType::DEATH;
+            _color = Color(0, 0, 0);
+        }
+        else if (id() % 2 == 1) {
+            _type = AgentType::MALE;
+            _color = Color(255, 100, 0);
+        }
+        else {
+            _type = AgentType::FEMALE;
+            _color = Color(0, 150, 200);
+            _invincibleTimer = 0;
+        }
     }
 
 	// compute the "new" bounding box of the agent
@@ -608,7 +611,7 @@ bool SocialForcesAgent::hasLineOfSightTo(Util::Point target)
 
 void SocialForcesAgent::updateAI(float timeStamp, float dt, unsigned int frameNumber)
 {
-    if (_type == AgentType::FEMALE) {
+    if (_typesEnabled && _type == AgentType::FEMALE) {
         _invincibleTimer -= 1;
         if (_invincibleTimer <= 0) {
             _invincibleTimer = 0;
@@ -885,7 +888,23 @@ void SocialForcesAgent::draw()
 		// DrawLib::drawStar(_waypoints.at(i), Util::Vector(1,0,0), 0.34f, gBlue);
 	}
 	else {
-
+        if (_typesEnabled) {
+            if (_type == AgentType::DEATH) {
+                Util::DrawLib::glColor(Util::Color(1, .1f, 0));
+                Util::DrawLib::drawBox(_position.x - _radius / 2, _position.x + _radius / 2,
+                    _position.y + 2, _position.y + 7,
+                    _position.z - _radius / 2, _position.z + _radius / 2);
+            }
+            else if (_type == AgentType::FEMALE && _invincibleTimer > 0) {
+                Util::DrawLib::glColor(Util::Color(0, 1, .1f));
+                Util::DrawLib::drawBox(_position.x - _radius / 2, _position.x + _radius / 2,
+                    _position.y + 2, _position.y + 3,
+                    _position.z - _radius / 2, _position.z + _radius / 2);
+            }
+        }
+        else {
+            this->_color = Util::gBlue;
+        }
 		Util::DrawLib::drawAgentDisc(_position, _radius, this->_color);
 	}
 	if (_goalQueue.front().goalType == SteerLib::GOAL_TYPE_SEEK_STATIC_TARGET) {

@@ -104,9 +104,10 @@ void Camera::useNextPointOfInterest()
 
 void Camera::update(float totalTime, float elapsedTime)
 {
-    m_currentView.position.x = 80 * cos(.1f * totalTime);
-    m_currentView.position.y = 70;
-    m_currentView.position.z = 80 * sin(.1f * totalTime);
+    // Uncomment for circular camera behavior.
+    //m_currentView.position.x = 80 * cos(.1f * totalTime);
+    //m_currentView.position.y = 70;
+    //m_currentView.position.z = 80 * sin(.1f * totalTime);
 
 	if (!m_isInterpolating)
 		return;

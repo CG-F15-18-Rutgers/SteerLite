@@ -133,7 +133,7 @@ class SocialForcesAgent : public SteerLib::AgentInterface
         
         bool isSearchEnabled = false; // If true, uses A* search initially to find a path to the goal.
         AgentType _type;
-        bool _typesEnabled = true;
+        bool _typesEnabled = false;
         bool _dead = false;
         int _invincibleTimer = 0;
         
