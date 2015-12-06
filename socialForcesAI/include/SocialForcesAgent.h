@@ -31,12 +31,13 @@
 
 
 // #define DRAW_ANNOTATIONS 1
-// #define DRAW_HISTORIES 1
+#define DRAW_HISTORIES 1
 // #define DRAW_COLLISIONS 1
 
 
 class SocialForcesAgent : public SteerLib::AgentInterface
 {
+    enum class AgentType {MALE, FEMALE, CHILD, DEATH};
     public:
         SocialForcesAgent();
         ~SocialForcesAgent();
@@ -104,7 +105,6 @@ class SocialForcesAgent : public SteerLib::AgentInterface
         std::vector<Util::Point> _waypoints;
 
     private:
-        bool runLongTermPlanning2();
         bool runLongTermPlanning();
         bool reachedCurrentWaypoint();
         void updateMidTermPath();
@@ -130,7 +130,13 @@ class SocialForcesAgent : public SteerLib::AgentInterface
         Util::Point _currentLocalTarget;
 
         SteerLib::AStarPlanner astar;
-
+        
+        bool isSearchEnabled = false; // If true, uses A* search initially to find a path to the goal.
+        AgentType _type;
+        bool _typesEnabled = true;
+        bool _dead = false;
+        int _invincibleTimer = 0;
+        
         friend class SocialForcesAIModule;
 
     #ifdef DRAW_HISTORIES

@@ -33,7 +33,6 @@ using namespace SteerLib;
 
 // #define _DEBUG_ENTROPY 1
 
-
 SocialForcesAgent::SocialForcesAgent()
 {
 	_SocialForcesParams.sf_acceleration = sf_acceleration;
@@ -48,7 +47,7 @@ SocialForcesAgent::SocialForcesAgent()
 	_SocialForcesParams.sf_wall_b = sf_wall_b;
 	_SocialForcesParams.sf_wall_a = sf_wall_a;
 	_SocialForcesParams.sf_max_speed = sf_max_speed;
-
+    
 	_enabled = false;
 }
 
@@ -106,15 +105,20 @@ void SocialForcesAgent::reset(const SteerLib::AgentInitialConditions & initialCo
 	_forward = normalize(initialConditions.direction);
 	_radius = initialConditions.radius;
 	_velocity = initialConditions.speed * _forward;
-	// std::cout << "inital colour of agent " << initialConditions.color << std::endl;
-	if ( initialConditions.colorSet == true )
-	{
-		this->_color = initialConditions.color;
-	}
-	else
-	{
-		this->_color = Util::gBlue;
-	}
+
+    if (id() % 13 == 1) {
+        _type = AgentType::DEATH;
+        _color = Color(0, 0, 0);
+    }
+    else if (id() % 2 == 1) {
+        _type = AgentType::MALE;
+        _color = Color(255, 100, 0);
+    }
+    else {
+        _type = AgentType::FEMALE;
+        _color = Color(0, 150, 200);
+        _invincibleTimer = 0;
+    }
 
 	// compute the "new" bounding box of the agent
 	Util::AxisAlignedBox newBounds(_position.x-_radius, _position.x+_radius, 0.0f, 0.5f, _position.z-_radius, _position.z+_radius);
@@ -257,12 +261,28 @@ Util::Vector SocialForcesAgent::calcProximityForce(float dt)
 
     for (auto neighbor : _neighbors) {
         if (neighbor->isAgent()) {
-            auto otherAgent = dynamic_cast<SteerLib::AgentInterface*>(neighbor);
+            auto otherAgent = dynamic_cast<SocialForcesAgent*>(neighbor);
             if (otherAgent->id() == this->id()) continue;
             float distance = Util::distanceBetween(otherAgent->position(), this->position());
             float radiusSum = otherAgent->radius() + this->radius();
             float scale = sf_agent_a * std::exp((radiusSum - distance) / sf_agent_b);
             Util::Vector normal = normalize(this->position() - otherAgent->position());
+            if (_typesEnabled) {
+                if (this->_type != AgentType::DEATH && (otherAgent->_type == AgentType::DEATH || otherAgent->_invincibleTimer > 0)) {
+                    scale *= 500;
+                }
+                if (this->_type == AgentType::DEATH && otherAgent->_type != AgentType::DEATH && otherAgent->_invincibleTimer == 0) {
+                    scale *= -500;
+                }
+                // Men want invincible women.
+                if (this->_type == AgentType::MALE && otherAgent->_type == AgentType::FEMALE && otherAgent->_invincibleTimer <= 0) {
+                    scale *= -250;
+                }
+
+                if (this->_type == AgentType::FEMALE && otherAgent->_type == AgentType::MALE && this->_invincibleTimer <= 0) {
+                    scale *= -250;
+                }
+            }
             totalForces += normal * scale;
         }
         else {
@@ -274,6 +294,13 @@ Util::Vector SocialForcesAgent::calcProximityForce(float dt)
             float distance = Util::distanceBetween(position(), min_stuff.second);
             float scale = sf_wall_a * std::exp((this->radius() - distance) / sf_wall_b);
             totalForces += away * scale;
+
+            // Sliding proximity force? Does it help?
+            Util::Vector wall_tangent = line.second - line.first;
+            wall_tangent = normalize(wall_tangent);
+            // If the tangent is in the opposite direction, correct it to align with agent's desired direction.
+            if (dot(wall_tangent, _prefVelocity) < 0) wall_tangent *= -1;
+            totalForces += wall_tangent * (min_stuff.first + radius());
         }
     }
     return totalForces;
@@ -283,6 +310,12 @@ Vector SocialForcesAgent::calcGoalForce(Vector _goalDirection, float _dt)
 {
     // Reference the slides for more info.
     // Mass * Acceleration (rate of change of velocity)
+    if (_typesEnabled) {
+        if (_type == AgentType::MALE) {
+            // TODO: find closest invincible female
+        }
+        return Util::Vector();
+    }
     return ((_goalDirection * PREFERED_SPEED) - velocity()) / _dt;
 }
 
@@ -314,7 +347,7 @@ Util::Vector SocialForcesAgent::calcAgentRepulsionForce(float dt)
     Util::Vector totalForces;
     for (auto neighbor : _neighbors) {
         if (neighbor->isAgent()) {
-            auto otherAgent = dynamic_cast<SteerLib::AgentInterface*>(neighbor);
+            auto otherAgent = dynamic_cast<SocialForcesAgent*>(neighbor);
             // do not consider influence on self.
             if (otherAgent->id() == this->id()) continue;
             float distance = Util::distanceBetween(otherAgent->position(), this->position());
@@ -322,6 +355,15 @@ Util::Vector SocialForcesAgent::calcAgentRepulsionForce(float dt)
             int g; // If agents collide, apply force, otherwise, do not
             if (distance <= radiusSum) {
                 g = 1;
+                if (_typesEnabled) {
+                    if (this->_type != AgentType::DEATH && otherAgent->_type == AgentType::DEATH) {
+                        this->_dead = true;
+                    }
+                    if (this->_type == AgentType::FEMALE && otherAgent->_type == AgentType::MALE && _invincibleTimer == 0) {
+                        _invincibleTimer = 100;
+                        return Vector();
+                    }
+                }
             }
             else {
                 g = 0;
@@ -566,6 +608,17 @@ bool SocialForcesAgent::hasLineOfSightTo(Util::Point target)
 
 void SocialForcesAgent::updateAI(float timeStamp, float dt, unsigned int frameNumber)
 {
+    if (_type == AgentType::FEMALE) {
+        _invincibleTimer -= 1;
+        if (_invincibleTimer <= 0) {
+            _invincibleTimer = 0;
+            _color = Color(0, 200, 255);
+        }
+        else {
+            _color = Color(255, 255, 255);
+        }
+    }
+
 	// std::cout << "_SocialForcesParams.rvo_max_speed " << _SocialForcesParams._SocialForcesParams.rvo_max_speed << std::endl;
 	Util::AutomaticFunctionProfiler profileThisFunction( &SocialForcesGlobals::gPhaseProfilers->aiProfiler );
 	if (!enabled())
@@ -579,6 +632,16 @@ void SocialForcesAgent::updateAI(float timeStamp, float dt, unsigned int frameNu
 	Util::Vector goalDirection;
     if (!_midTermPath.empty())
     {
+        while (_midTermPath.size() > 1) {
+            //Check if next point is reachable.
+            Util::Point nextPoint = _midTermPath.at(1);
+            if (this->hasLineOfSightTo(nextPoint)) {
+                _midTermPath.erase(_midTermPath.begin());
+            }
+            else {
+                break;
+            }
+        }
         Util::Point pt = _midTermPath.at(0);
         if ((position() - pt).lengthSquared() <= (radius()*radius())) {
             this->_midTermPath.erase(this->_midTermPath.begin());
@@ -678,6 +741,10 @@ void SocialForcesAgent::updateAI(float timeStamp, float dt, unsigned int frameNu
 		}
 	}
 
+    if (_dead) {
+        disable();
+        return;
+    }
 	// Hear the 2D solution from RVO is converted into the 3D used by SteerSuite
 	// _velocity = Vector(velocity().x, 0.0f, velocity().z);
 	if ( velocity().lengthSquared() > 0.0 )
@@ -749,73 +816,36 @@ void SocialForcesAgent::updateLocalTarget()
  */
 bool SocialForcesAgent::runLongTermPlanning()
 {
-	_midTermPath.clear();
-	//==========================================================================
-
-	// run the main a-star search here
-	std::vector<Util::Point> agentPath;
-	Util::Point pos =  position();
-
-    std::cout << "Attempting to find path" << std::endl;
-    astar.computePath(agentPath, pos, _goalQueue.front().targetLocation, gSpatialDatabase, true);
-	//if ( !gSpatialDatabase->findPath(pos, _goalQueue.front().targetLocation,
-	//		agentPath, (unsigned int) 50000))
-	//{
-	//	return false;
-	//}
-    std::cout << "Long term planning outputs the following points" << std::endl;
-    for (Util::Point p : agentPath) {
-        std::cout << p << " , ";
+    _midTermPath.clear();
+    if (!this->isSearchEnabled) {
+        return false;
     }
-    std::cout << std::endl;
+    else {
+        //==========================================================================
 
-	for  (int i=1; i <  agentPath.size(); i++)
-	{
-		_midTermPath.push_back(agentPath.at(i));
-		if ((i % FURTHEST_LOCAL_TARGET_DISTANCE) == 0)
-		{
-			_waypoints.push_back(agentPath.at(i));
-		}
-	}
-	return true;
+        // run the main a-star search here
+        std::vector<Util::Point> agentPath;
+        Util::Point pos = position();
+
+        astar.computePath(agentPath, pos, _goalQueue.front().targetLocation, gSpatialDatabase, true);
+        std::cout << "A* planning found the following path" << std::endl;
+        for (Util::Point p : agentPath) {
+            std::cout << p << " , ";
+        }
+        std::cout << std::endl;
+
+        for (int i = 1; i < agentPath.size(); i++)
+        {
+            _midTermPath.push_back(agentPath.at(i));
+            if ((i % FURTHEST_LOCAL_TARGET_DISTANCE) == 0)
+            {
+                _waypoints.push_back(agentPath.at(i));
+            }
+        }
+        return true;
+    }
 }
 
-
-bool SocialForcesAgent::runLongTermPlanning2()
-{
-
-#ifndef USE_PLANNING
-	return;
-#endif
-	_waypoints.clear();
-	//==========================================================================
-
-	// run the main a-star search here
-	std::vector<Util::Point> agentPath;
-	Util::Point pos =  position();
-	if (gEngine->isAgentSelected(this))
-	{
-		// std::cout << "agent" << this->id() << " is running planning again" << std::endl;
-	}
-
-	if ( !gSpatialDatabase->findSmoothPath(pos, _goalQueue.front().targetLocation,
-			agentPath, (unsigned int) 50000))
-	{
-		return false;
-	}
-
-	// Push path into _waypoints
-
-	// Skip first node that is at location of agent
-	for  (int i=1; i <  agentPath.size(); i++)
-	{
-		_waypoints.push_back(agentPath.at(i));
-
-	}
-
-	return true;
-
-}
 
 
 void SocialForcesAgent::draw()
@@ -855,6 +885,7 @@ void SocialForcesAgent::draw()
 		// DrawLib::drawStar(_waypoints.at(i), Util::Vector(1,0,0), 0.34f, gBlue);
 	}
 	else {
+
 		Util::DrawLib::drawAgentDisc(_position, _radius, this->_color);
 	}
 	if (_goalQueue.front().goalType == SteerLib::GOAL_TYPE_SEEK_STATIC_TARGET) {

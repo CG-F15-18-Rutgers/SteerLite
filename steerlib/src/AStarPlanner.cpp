@@ -191,7 +191,7 @@ namespace SteerLib
 		_tryToAdd(x, z + 1, node, 1, goal, out);
 
 		// CHANGE diagonalCost for part 3.
-		float diagonalCost = 1;
+		float diagonalCost = 1.121;
 		_tryToAdd(x - 1, z - 1, node, diagonalCost, goal, out);
 		_tryToAdd(x - 1, z + 1, node, diagonalCost, goal, out);
 		_tryToAdd(x + 1, z - 1, node, diagonalCost, goal, out);
