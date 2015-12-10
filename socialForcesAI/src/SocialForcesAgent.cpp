@@ -11,6 +11,8 @@
 #include "SocialForces_Parameters.h"
 // #include <math.h>
 
+#include <typeinfo.h>
+#include <exception>
 
 // #include "util/Geometry.h"
 
@@ -91,13 +93,6 @@ void SocialForcesAgent::reset(const SteerLib::AgentInitialConditions & initialCo
 	Util::AxisAlignedBox oldBounds(_position.x-_radius, _position.x+_radius, 0.0f, 0.5f, _position.z-_radius, _position.z+_radius);
 
 	// initialize the agent based on the initial conditions
-	/*
-	position_ = Vector2(initialConditions.position.x, initialConditions.position.z);
-	radius_ = initialConditions.radius;
-	velocity_ = normalize(Vector2(initialConditions.direction.x, initialConditions.direction.z));
-	velocity_ = velocity_ * initialConditions.speed;
-*/
-	// initialize the agent based on the initial conditions
 	_position = initialConditions.position;
 	_forward = normalize(initialConditions.direction);
 	_radius = initialConditions.radius;
@@ -122,11 +117,7 @@ void SocialForcesAgent::reset(const SteerLib::AgentInitialConditions & initialCo
 	}
 	else {
 		// if the agent was enabled, then the agent already existed in the database, so update it instead of adding it.
-		// std::cout << "new position is " << _position << std::endl;
-		// std::cout << "new bounds are " << newBounds << std::endl;
-		// std::cout << "reset update " << this << std::endl;
 		gSpatialDatabase->updateObject( dynamic_cast<SpatialDatabaseItemPtr>(this), oldBounds, newBounds);
-		// engineInfo->getSpatialDatabase()->updateObject( this, oldBounds, newBounds);
 	}
 
 	_enabled = true;
@@ -177,20 +168,7 @@ void SocialForcesAgent::reset(const SteerLib::AgentInitialConditions & initialCo
 		goalDirection = normalize( _goalQueue.front().targetLocation - position());
 	}
 
-	_prefVelocity =
-			(
-				(
-					(
-						Util::Vector(goalDirection.x, 0.0f, goalDirection.z) *
-						PERFERED_SPEED
-					)
-				- velocity()
-				)
-				/
-				_SocialForcesParams.sf_acceleration
-			)
-			*
-			MASS;
+	_prefVelocity = (((Util::Vector(goalDirection.x, 0.0f, goalDirection.z) * PERFERED_SPEED) - velocity()) / _SocialForcesParams.sf_acceleration ) * MASS;
 
 	// _velocity = _prefVelocity;
 #ifdef _DEBUG_ENTROPY
@@ -234,6 +212,30 @@ std::pair<float, Util::Point> minimum_distance(Util::Point l1, Util::Point l2, U
   return std::make_pair((p - projection).length(), projection) ;
 }
 
+// The magnitude of perp will be distance away
+void getPerpVector(const std::vector<Util::Vector>& poly, const Util::Point& inPt, Util::Vector& perp, Util::Vector& proj) {
+    float smallestDistance = std::numeric_limits<float>::max();
+
+    for (int i = 0; i < poly.size(); i++) {
+        int nextIndex = (i + 1) % poly.size();
+        Util::Vector A = poly[i];
+        Util::Vector B = poly[nextIndex];
+        Util::Vector edge = B - A;
+        if (B == A) continue;
+        Util::Vector pt = Util::Vector(inPt.x, inPt.y, inPt.z) - A;
+        // Project pt onto edge.
+        float projScale = (dot(pt, edge) / dot(edge, edge));
+        if (projScale > 1 || projScale < 0) continue;
+        Util::Vector proj = projScale * edge;
+        Util::Vector tempPerp = pt - proj;
+
+        if (tempPerp.length() < smallestDistance) {
+            perp = tempPerp;
+            proj = proj;
+            smallestDistance = tempPerp.length();
+        }
+    }
+}
 
 Util::Vector SocialForcesAgent::calcProximityForce(float dt)
 {
@@ -270,6 +272,37 @@ Util::Vector SocialForcesAgent::calcProximityForce(float dt)
             float distance = Util::distanceBetween(position(), min_stuff.second);
             float scale = 50 * sf_wall_a * std::exp((this->radius() - distance) / sf_wall_b);
             totalForces += away * scale;
+        }
+    }
+
+    // Because polygons don't have well defined radius, we'll just use a huge query radius to find them.
+    float polyRadius = 700;
+    gEngine->getSpatialDatabase()->getItemsInRange(_neighbors,
+        position().x - (this->_radius + polyRadius),
+        position().x + (this->_radius + polyRadius),
+        position().z - (this->_radius + polyRadius),
+        position().z + (this->_radius + polyRadius),
+        dynamic_cast<SteerLib::SpatialDatabaseItemPtr>(this));
+
+    for (auto neighbor : _neighbors) {
+        if (!neighbor->isAgent()) {
+            auto poly = dynamic_cast<SteerLib::ObstacleInterface *>(neighbor);
+            Util::Vector perp, proj;
+            std::vector<Util::Vector> vertices;
+            poly->returnVertices(vertices);
+            getPerpVector(vertices, this->position(), perp, proj);
+            // Check distance to closest edge and compute normal.
+            float distance = perp.length();
+            float scale = 50 * sf_wall_a * std::exp((this->radius() - distance) / sf_wall_b);
+            totalForces += perp * scale;
+
+            Util::Vector tangent = normalize(proj);
+            if (distance < .00001f) {
+                // Move away and in direction of edge which is closer to our direction (sliding force).
+                // if (dot(tangent, _prefVelocity) < 0) tangent *= -1;
+                //totalForces += tangent * (distance + radius()) * _SocialForcesParams.sf_sliding_friction_force;
+            }
+            
         }
     }
     return totalForces;

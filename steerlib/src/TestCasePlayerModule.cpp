@@ -105,8 +105,9 @@ void TestCasePlayerModule::initializeSimulation() {
 		SteerLib::ObstacleInterface *b = const_cast<SteerLib::ObstacleInitialConditions*>(ic)->createObstacle(); // TODO: FIX THIS.
 		_obstacles.push_back(b);
 		_engine->addObstacle(b);
+        std::cout << b->getBounds() << std::endl;
 		_engine->getSpatialDatabase()->addObject( b, b->getBounds());
-		// std::cout << "adding obstacle";
+		std::cout << "adding obstacle";
 	}
 
 	//Create the agents

@@ -23,8 +23,16 @@ PolygonObstacle::PolygonObstacle(std::vector<Util::Point> points, float traversa
         _vectors.push_back( Util::Vector( _points[i].x, _points[i].y, _points[i].z ) );
     }
 
-	_centerPosition = Util::Point(0,0,0);
-	_radius = 0.0;
+    // First take the average of the points to get a center.
+    Util::Point average;
+
+    for (Util::Point pt : points) {
+        average = average + pt;
+    }
+    average = average / points.size();
+
+	_centerPosition = average;
+	_radius = 1;
 	float ymin = 0.0;
 	float ymax = 1.0;
 	_bounds.ymin = ymin;

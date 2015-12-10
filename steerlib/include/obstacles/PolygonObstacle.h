@@ -22,7 +22,7 @@ public:
 
 	// ObstacleInterface functionality (not all virtual functions were overridden here)
 	void draw(); // implementation in .cpp
-	const Util::AxisAlignedBox & getBounds() { return _bounds; }
+	virtual const Util::AxisAlignedBox & getBounds() { return _bounds; }
 	virtual void setBounds(const Util::AxisAlignedBox & bounds) { _bounds = bounds; }
 
 	/// @name The SpatialDatabaseItem interface
